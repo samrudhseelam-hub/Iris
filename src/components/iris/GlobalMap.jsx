@@ -1,131 +1,157 @@
-import { useEffect, useState, useRef, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from "react-leaflet";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-function getRiskColor(risk) {
-  if (risk < 15) return "#4ade80";
-  if (risk < 25) return "#86efac";
-  if (risk < 35) return "#fbbf24";
-  if (risk < 50) return "#fb923c";
-  if (risk < 65) return "#f87171";
-  return "#ef4444";
+// Smooth color gradient: green → yellow → orange → red
+function riskToColor(risk) {
+  // risk: 0–100
+  const t = Math.min(1, risk / 80);
+  if (t < 0.33) {
+    // green (#4ade80) → amber (#fbbf24)
+    const s = t / 0.33;
+    return interpolateColor([74, 222, 128], [251, 191, 36], s);
+  } else if (t < 0.66) {
+    // amber → orange (#f97316)
+    const s = (t - 0.33) / 0.33;
+    return interpolateColor([251, 191, 36], [249, 115, 22], s);
+  } else {
+    // orange → red (#dc2626)
+    const s = (t - 0.66) / 0.34;
+    return interpolateColor([249, 115, 22], [220, 38, 38], s);
+  }
 }
 
-function getRadius(risk, population) {
-  const baseRadius = Math.max(4, Math.min(20, Math.sqrt(population / 10000000) * 3));
-  const riskMultiplier = 0.7 + (risk / 100) * 0.8;
-  return baseRadius * riskMultiplier;
+function interpolateColor(c1, c2, t) {
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+  return `rgb(${r},${g},${b})`;
 }
 
-function MapUpdater({ center, zoom }) {
-  const map = useMap();
-  useEffect(() => {
-    if (center) map.flyTo(center, zoom || 3, { duration: 1 });
-  }, [center, zoom, map]);
-  return null;
+function riskLabel(risk) {
+  if (risk < 15) return "Low";
+  if (risk < 30) return "Moderate";
+  if (risk < 50) return "Elevated";
+  if (risk < 65) return "High";
+  return "Critical";
+}
+
+const trendArrow = { rising: "↑", falling: "↓", stable: "→" };
+const trendColor = { rising: "#ef4444", falling: "#22c55e", stable: "#94a3b8" };
+
+function getRadius(population) {
+  return Math.max(5, Math.min(22, Math.pow(population / 10_000_000, 0.5) * 5));
 }
 
 export default function GlobalMap({ predictions, onCountrySelect, selectedCountry }) {
-  const [mapCenter, setMapCenter] = useState([20, 0]);
-  const [mapZoom, setMapZoom] = useState(2);
-
-  const handleClick = (pred) => {
-    onCountrySelect?.(pred);
-    setMapCenter([pred.lat, pred.lng]);
-    setMapZoom(4);
-  };
-
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="relative h-[480px] md:h-[560px]">
+      <div className="relative" style={{ height: 520 }}>
         <MapContainer
-          center={mapCenter}
-          zoom={mapZoom}
+          center={[15, 10]}
+          zoom={2}
           className="h-full w-full"
-          zoomControl={true}
-          scrollWheelZoom={true}
-          style={{ background: "hsl(210 20% 96%)" }}
+          zoomControl
+          scrollWheelZoom
           minZoom={2}
           maxZoom={8}
+          style={{ background: "#f0f4f8" }}
         >
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-            opacity={0.6}
+            opacity={0.55}
           />
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
-            opacity={0.4}
+            opacity={0.45}
           />
-          <MapUpdater center={mapCenter} zoom={mapZoom} />
 
-          {predictions.map((pred) => (
-            <CircleMarker
-              key={pred.countryCode}
-              center={[pred.lat, pred.lng]}
-              radius={getRadius(pred.risk, pred.population)}
-              pathOptions={{
-                fillColor: getRiskColor(pred.risk),
-                fillOpacity: 0.55,
-                color: getRiskColor(pred.risk),
-                weight: selectedCountry?.countryCode === pred.countryCode ? 3 : 1.5,
-                opacity: selectedCountry?.countryCode === pred.countryCode ? 1 : 0.7,
-              }}
-              eventHandlers={{
-                click: () => handleClick(pred),
-              }}
-            >
-              <Tooltip
-                direction="top"
-                offset={[0, -10]}
-                opacity={0.97}
+          {predictions.map(p => {
+            const color = riskToColor(p.risk);
+            const isSelected = selectedCountry?.countryCode === p.countryCode;
+            const radius = getRadius(p.population);
+
+            return (
+              <CircleMarker
+                key={p.countryCode}
+                center={[p.lat, p.lng]}
+                radius={isSelected ? radius + 3 : radius}
+                pathOptions={{
+                  fillColor: color,
+                  fillOpacity: isSelected ? 0.80 : 0.58,
+                  color: isSelected ? "#1e293b" : color,
+                  weight: isSelected ? 2.5 : 1.2,
+                  opacity: 0.85,
+                }}
+                eventHandlers={{ click: () => onCountrySelect?.(p) }}
               >
-                <div className="p-1 min-w-[160px]">
-                  <p className="font-semibold text-sm">{pred.country}</p>
-                  <div className="mt-1 space-y-0.5 text-xs">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-500">Disease</span>
-                      <span className="font-medium">{pred.disease}</span>
+                <Tooltip direction="top" offset={[0, -radius]} opacity={0.98}>
+                  <div style={{ minWidth: 180, fontFamily: "Inter, sans-serif" }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
+                      {p.country}
                     </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-500">Outbreak Risk</span>
-                      <span className="font-bold" style={{ color: getRiskColor(pred.risk) }}>{pred.risk}%</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-500">Est. Cases</span>
-                      <span className="font-medium">
-                        {pred.estimatedCases >= 1000000
-                          ? (pred.estimatedCases / 1000000).toFixed(1) + "M"
-                          : (pred.estimatedCases / 1000).toFixed(0) + "K"
-                        }
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-500">Confidence</span>
-                      <span className="font-medium">{pred.confidence}%</span>
+                    <table style={{ width: "100%", fontSize: 11, borderSpacing: "0 2px" }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ color: "#64748b" }}>Disease</td>
+                          <td style={{ fontWeight: 600, textAlign: "right" }}>{p.disease}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ color: "#64748b" }}>Risk Level</td>
+                          <td style={{ fontWeight: 700, textAlign: "right", color }}>
+                            {p.risk}% — {riskLabel(p.risk)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ color: "#64748b" }}>Confidence</td>
+                          <td style={{ fontWeight: 600, textAlign: "right" }}>{p.confidence}%</td>
+                        </tr>
+                        <tr>
+                          <td style={{ color: "#64748b" }}>Trend</td>
+                          <td style={{ fontWeight: 600, textAlign: "right", color: trendColor[p.trend] }}>
+                            {trendArrow[p.trend]} {p.trend} ({p.yoyGrowth > 0 ? "+" : ""}{p.yoyGrowth}% YoY)
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ color: "#64748b" }}>Est. Cases</td>
+                          <td style={{ fontWeight: 600, textAlign: "right" }}>
+                            {p.estimatedCases >= 1e6
+                              ? (p.estimatedCases / 1e6).toFixed(1) + "M"
+                              : p.estimatedCases >= 1000
+                              ? (p.estimatedCases / 1000).toFixed(0) + "K"
+                              : p.estimatedCases}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div style={{ marginTop: 6, fontSize: 10, color: "#94a3b8" }}>
+                      Click to explore risk breakdown
                     </div>
                   </div>
-                </div>
-              </Tooltip>
-            </CircleMarker>
-          ))}
+                </Tooltip>
+              </CircleMarker>
+            );
+          })}
         </MapContainer>
 
-        {/* Legend */}
-        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 z-[1000] shadow-sm border border-border">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Risk Level</p>
-          <div className="flex items-center gap-1.5">
-            {[
-              { color: "#4ade80", label: "Low" },
-              { color: "#fbbf24", label: "Mod" },
-              { color: "#fb923c", label: "High" },
-              { color: "#ef4444", label: "Crit" },
-            ].map(l => (
-              <div key={l.label} className="flex items-center gap-1">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: l.color }} />
-                <span className="text-[10px] text-muted-foreground">{l.label}</span>
-              </div>
-            ))}
+        {/* Gradient Legend */}
+        <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl p-3 z-[1000] shadow-md border border-border/60">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Outbreak Risk</p>
+          <div className="flex items-center gap-1.5 mb-1">
+            <div
+              className="h-2.5 w-28 rounded-full"
+              style={{ background: "linear-gradient(to right, #4ade80, #fbbf24, #f97316, #dc2626)" }}
+            />
+          </div>
+          <div className="flex justify-between text-[9px] text-muted-foreground w-28">
+            <span>Low</span><span>Moderate</span><span>Critical</span>
+          </div>
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span style={{ color: "#ef4444" }}>↑</span> Rising &nbsp;
+              <span style={{ color: "#22c55e" }}>↓</span> Falling &nbsp;
+              <span style={{ color: "#94a3b8" }}>→</span> Stable
+            </div>
           </div>
         </div>
       </div>

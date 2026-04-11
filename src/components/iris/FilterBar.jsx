@@ -1,5 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DISEASES } from "@/lib/outbreakData";
+import { DISEASE_LIST } from "@/lib/outbreakData";
 import { Filter, Calendar } from "lucide-react";
 
 const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
@@ -29,7 +29,7 @@ export default function FilterBar({ year, onYearChange, disease, onDiseaseChange
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Diseases</SelectItem>
-            {DISEASES.map(d => (
+            {(DISEASE_LIST || []).map(d => (
               <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
             ))}
           </SelectContent>

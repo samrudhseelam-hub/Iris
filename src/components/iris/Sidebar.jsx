@@ -28,12 +28,12 @@ export default function Sidebar() {
 
 function NavItem({ icon: Icon, active, label }) {
   return (
-    <div
+    <div // eslint-disable-line
       className={`relative group w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${
         active ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
       }`}
     >
-      <Icon className="w-4.5 h-4.5" />
+      <Icon className="w-[18px] h-[18px]" />
       <div className="absolute left-14 px-2 py-1 bg-foreground text-background text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
         {label}
       </div>
