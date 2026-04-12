@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/iris/Sidebar";
 import FilterBar from "@/components/iris/FilterBar";
 import GlobalRiskScore from "@/components/iris/GlobalRiskScore";
-import ChoroplethMap from "@/components/iris/ChoroplethMap";
+import GlobalMap from "@/components/iris/GlobalMap";
 import HighRiskCountries from "@/components/iris/HighRiskCountries";
 import TrendingDiseases from "@/components/iris/TrendingDiseases";
 import AIInsights from "@/components/iris/AIInsights";
@@ -14,7 +14,6 @@ import DiseaseTrends from "@/components/iris/DiseaseTrends";
 import RiskExplanation from "@/components/iris/RiskExplanation";
 import FastGrowingOutbreaks from "@/components/iris/FastGrowingOutbreaks";
 import WhatIfSimulator from "@/components/iris/WhatIfSimulator";
-import ComparePanel from "@/components/iris/ComparePanel";
 
 import {
   getCountryMaxRisk,
@@ -134,7 +133,7 @@ export default function Dashboard() {
           </div>
 
           {/* Map */}
-          <ChoroplethMap
+          <GlobalMap
             predictions={countryRisks}
             onCountrySelect={setSelectedCountry}
             selectedCountry={selectedCountry}
@@ -175,9 +174,6 @@ export default function Dashboard() {
 
           {/* What-If Simulator — Full Width */}
           <WhatIfSimulator year={year} />
-
-          {/* Compare Mode — Full Width */}
-          <ComparePanel year={year} />
 
           {/* Footer */}
           <div className="text-center py-6 border-t border-border">
