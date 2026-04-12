@@ -52,10 +52,9 @@ function fmtNum(n) {
 const TREND_ARROW = { rising: "↑", falling: "↓", stable: "→" };
 const TREND_COLOR = { rising: "#ef4444", falling: "#22c55e", stable: "#94a3b8" };
 
-// ── Countries that get sub-national breakdown ──────────────────────────────────
-const SUBNATIONAL_COUNTRIES = new Set([
-  "US","CN","IN","BR","RU","AU","CA","NG","ID","MX","AR","ZA","CD","ET","PK",
-]);
+// All countries get sub-national breakdown
+const SUBNATIONAL_COUNTRIES = "ALL"; // sentinel — every country
+function isSubnational(code) { return !!code; }
 
 // ── ISO resolution ────────────────────────────────────────────────────────────
 const ISO_MAP = {
@@ -104,17 +103,35 @@ function resolveCountryCode(props) {
   return NAME_MAP[name] || null;
 }
 
+// Full ISO3 → ISO2 map for admin-1 features
+const A3_TO_A2 = {
+  USA:"US",CHN:"CN",IND:"IN",BRA:"BR",RUS:"RU",AUS:"AU",CAN:"CA",NGA:"NG",IDN:"ID",
+  MEX:"MX",ARG:"AR",ZAF:"ZA",COD:"CD",ETH:"ET",PAK:"PK",BGD:"BD",DEU:"DE",GBR:"GB",
+  FRA:"FR",THA:"TH",TZA:"TZ",KEN:"KE",COL:"CO",ITA:"IT",MMR:"MM",KOR:"KR",SDN:"SD",
+  UGA:"UG",DZA:"DZ",IRQ:"IQ",AFG:"AF",MAR:"MA",SAU:"SA",PER:"PE",AGO:"AO",MOZ:"MZ",
+  GHA:"GH",YEM:"YE",NPL:"NP",VEN:"VE",MDG:"MG",CMR:"CM",NER:"NE",LKA:"LK",MLI:"ML",
+  GTM:"GT",SEN:"SN",KHM:"KH",TCD:"TD",SOM:"SO",ZMB:"ZM",ZWE:"ZW",RWA:"RW",GIN:"GN",
+  BFA:"BF",MWI:"MW",BOL:"BO",HTI:"HT",SWE:"SE",PRT:"PT",ISR:"IL",SLE:"SL",LBR:"LR",
+  PNG:"PG",LAO:"LA",VNM:"VN",POL:"PL",ESP:"ES",TUR:"TR",IRN:"IR",UKR:"UA",MYS:"MY",
+  CIV:"CI",UZB:"UZ",CHL:"CL",NLD:"NL",ROU:"RO",ECU:"EC",HND:"HN",CUB:"CU",NZL:"NZ",
+  NOR:"NO",FIN:"FI",DNK:"DK",SGP:"SG",TGO:"TG",BEN:"BJ",CAF:"CF",COG:"CG",SSD:"SS",
+  BDI:"BI",NIC:"NI",DOM:"DO",ERI:"ER",EGY:"EG",PHL:"PH",JPN:"JP",MNG:"MN",KAZ:"KZ",
+  UMI:"US",PRK:"KP",SYR:"SY",LBY:"LY",MLT:"MT",GRC:"GR",HRV:"HR",CZE:"CZ",SVK:"SK",
+  HUN:"HU",BGR:"BG",SRB:"RS",BIH:"BA",ALB:"AL",MKD:"MK",MDA:"MD",BLR:"BY",LTU:"LT",
+  LVA:"LV",EST:"EE",AUT:"AT",CHE:"CH",BEL:"BE",LUX:"LU",IRL:"IE",ISL:"IS",CYP:"CY",
+  TUN:"TN",LBN:"LB",JOR:"JO",PSE:"PS",KWT:"KW",QAT:"QA",ARE:"AE",OMN:"OM",BHR:"BH",
+  KGZ:"KG",TJK:"TJ",TKM:"TM",AZE:"AZ",GEO:"GE",ARM:"AM",MNG:"MN",BTN:"BT",MDV:"MV",
+  BWA:"BW",NAM:"NA",LSO:"LS",SWZ:"SZ",COM:"KM",MUS:"MU",SYC:"SC",DJI:"DJ",ERI:"ER",
+};
+
 function resolveAdmin1Code(props) {
-  // admin-1 feature: get parent country code
-  const iso = props?.iso_a2 || props?.ISO_A2 || "";
-  if (iso && ISO_MAP[iso]) return ISO_MAP[iso];
-  // try adm0_a3 (3-letter ISO)
-  const a3 = props?.adm0_a3 || "";
-  const A3_MAP = {
-    USA:"US",CHN:"CN",IND:"IN",BRA:"BR",RUS:"RU",AUS:"AU",CAN:"CA",
-    NGA:"NG",IDN:"ID",MEX:"MX",ARG:"AR",ZAF:"ZA",COD:"CD",ETH:"ET",PAK:"PK",
-  };
-  return A3_MAP[a3] || null;
+  const iso2 = props?.iso_a2 || props?.ISO_A2 || "";
+  if (iso2 && iso2 !== "-99" && ISO_MAP[iso2]) return ISO_MAP[iso2];
+  const a3 = props?.adm0_a3 || props?.ADM0_A3 || props?.iso_3166_2?.slice(0,3) || "";
+  if (a3 && A3_TO_A2[a3]) return A3_TO_A2[a3];
+  // Fallback: country name
+  const cname = props?.admin || props?.ADMIN || props?.sovereignt || "";
+  return NAME_MAP[cname] || null;
 }
 
 // ── Tooltip builder ────────────────────────────────────────────────────────────
@@ -184,7 +201,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const code = resolveCountryCode(feature.properties);
     // Hide subnational countries — admin-1 layer handles them
     if (code && SUBNATIONAL_COUNTRIES.has(code) && admin1Geo) {
-      return { fillColor: "transparent", fillOpacity: 0, ...OUTLINE, weight: 0.8 };
+      return { fillColor: "transparent", fillOpacity: 0, color: "#111827", weight: 0.8, opacity: 0.7 };
     }
     const data = code ? riskMap[code] : null;
     let fillColor = "#d1d5db", fillOpacity = 0.15;
@@ -197,7 +214,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
 
   function styleAdmin1(feature) {
     const countryCode = resolveAdmin1Code(feature.properties);
-    if (!countryCode || !SUBNATIONAL_COUNTRIES.has(countryCode)) return { fillOpacity: 0, ...OUTLINE_SUB };
+    if (!countryCode) return { fillOpacity: 0, ...OUTLINE_SUB };
     const countryData = riskMap[countryCode];
     if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_SUB };
 
@@ -218,7 +235,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const data = code ? riskMap[code] : null;
     const name = feature.properties?.NAME || feature.properties?.ADMIN || feature.properties?.name || "Unknown";
     // Skip subnational countries if admin1 is loaded (handled by that layer)
-    if (code && SUBNATIONAL_COUNTRIES.has(code) && admin1Geo) {
+    if (code && isSubnational(code) && admin1Geo) {
       layer.on({ click: () => data && onCountrySelect?.(data) });
       return;
     }
@@ -227,7 +244,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
 
   function onEachAdmin1(feature, layer) {
     const countryCode = resolveAdmin1Code(feature.properties);
-    if (!countryCode || !SUBNATIONAL_COUNTRIES.has(countryCode)) return;
+    if (!countryCode) return;
     const countryData = riskMap[countryCode];
     const subName = feature.properties?.name || feature.properties?.NAME || "";
     let subData = null;
@@ -295,7 +312,7 @@ let cachedCountryGeo = null;
 let cachedAdmin1Geo = null;
 
 const COUNTRY_GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
-const ADMIN1_GEO_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson";
+const ADMIN1_GEO_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson";
 
 export default function GlobalMap({ predictions, onCountrySelect, selectedCountry, isDelta = false, year = 2026 }) {
   const [countryGeo, setCountryGeo] = useState(cachedCountryGeo);

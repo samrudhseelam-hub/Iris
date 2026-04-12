@@ -674,10 +674,19 @@ export function applyInterventions(baseRisk, interventions, disease, country) {
 // ─── Sub-region risk (seeded variation around country baseline) ───────────────
 // Used by GlobalMap to color admin-1 provinces/states.
 export function getSubRegionRisk(countryCode, subRegionName, diseaseName, year, countryBaseRisk) {
-  const seed = hash(`sub3-${countryCode}-${subRegionName}-${diseaseName}-${year}`);
+  const seed = hash(`sub4-${countryCode}-${subRegionName}-${diseaseName}-${year}`);
   const rng = seededRandom(seed);
-  // ±25% variation around the country baseline, biased by sub-region name length (proxy for diversity)
-  const bias = (subRegionName.length % 7) / 7 * 0.10 - 0.05;
-  const variation = (rng() - 0.5) * 0.50 + bias;
-  return Math.max(1.0, Math.min(93, countryBaseRisk * (1 + variation)));
+  // Whether we have a real country-level baseline or are estimating
+  const hasGoodData = countryBaseRisk > 0;
+  // Large ±45% chunk variation for visible regional differences
+  const variation = (rng() - 0.5) * 0.90;
+  // Name-based geographic proxy (longer names = slightly higher diversity offset)
+  const bias = (subRegionName.length % 11) / 11 * 0.18 - 0.09;
+  if (hasGoodData) {
+    return Math.max(1.0, Math.min(93, countryBaseRisk * (1 + variation + bias)));
+  } else {
+    // No country data — give low-confidence estimate (2–15% range)
+    const lowBase = 2 + rng() * 13;
+    return Math.max(1.0, Math.min(15, lowBase + bias * 5));
+  }
 }
