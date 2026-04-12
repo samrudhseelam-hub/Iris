@@ -124,12 +124,29 @@ const A3_TO_A2 = {
   BWA:"BW",NAM:"NA",LSO:"LS",SWZ:"SZ",COM:"KM",MUS:"MU",SYC:"SC",DJI:"DJ",ERI:"ER",
 };
 
+// US states → 6 broad risk regions
+const US_STATE_TO_REGION = {
+  "Maine":"Northeast","New Hampshire":"Northeast","Vermont":"Northeast","Massachusetts":"Northeast",
+  "Rhode Island":"Northeast","Connecticut":"Northeast","New York":"Northeast","New Jersey":"Northeast",
+  "Pennsylvania":"Northeast","Delaware":"Northeast","Maryland":"Northeast",
+  "Virginia":"Southeast","West Virginia":"Southeast","North Carolina":"Southeast","South Carolina":"Southeast",
+  "Georgia":"Southeast","Florida":"Southeast","Alabama":"Southeast","Mississippi":"Southeast",
+  "Tennessee":"Southeast","Kentucky":"Southeast","Arkansas":"Southeast",
+  "Ohio":"Midwest","Indiana":"Midwest","Illinois":"Midwest","Michigan":"Midwest","Wisconsin":"Midwest",
+  "Minnesota":"Midwest","Iowa":"Midwest","Missouri":"Midwest","North Dakota":"Midwest","South Dakota":"Midwest",
+  "Nebraska":"Midwest","Kansas":"Midwest",
+  "Texas":"South Central","Oklahoma":"South Central","Louisiana":"South Central",
+  "Montana":"West","Idaho":"West","Wyoming":"West","Colorado":"West","Utah":"West",
+  "Nevada":"West","California":"West","Oregon":"West","Washington":"West",
+  "Arizona":"Southwest","New Mexico":"Southwest",
+  "Alaska":"Alaska","Hawaii":"Hawaii",
+};
+
 function resolveAdmin1Code(props) {
   const iso2 = props?.iso_a2 || props?.ISO_A2 || "";
   if (iso2 && iso2 !== "-99" && ISO_MAP[iso2]) return ISO_MAP[iso2];
   const a3 = props?.adm0_a3 || props?.ADM0_A3 || props?.iso_3166_2?.slice(0,3) || "";
   if (a3 && A3_TO_A2[a3]) return A3_TO_A2[a3];
-  // Fallback: country name
   const cname = props?.admin || props?.ADMIN || props?.sovereignt || "";
   return NAME_MAP[cname] || null;
 }
@@ -237,17 +254,19 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const countryCode = resolveAdmin1Code(feature.properties);
     if (!countryCode) return;
     const countryData = riskMap[countryCode];
-    const subName = feature.properties?.name || feature.properties?.NAME || "";
+    const rawName = feature.properties?.name || feature.properties?.NAME || "";
+    // For US: group states into broad regions
+    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : rawName;
     let subData = null;
     if (countryData) {
       const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
       subData = {
         ...countryData,
         risk: Math.round(subRisk * 10) / 10,
-        _subRegion: subName,
+        _subRegion: countryCode === "US" ? `${rawName} (${subName})` : rawName,
       };
     }
-    attachInteractions(layer, subData, subName, styleAdmin1, feature);
+    attachInteractions(layer, subData, rawName, styleAdmin1, feature);
   }
 
   function attachInteractions(layer, data, name, styleFn, feature) {
