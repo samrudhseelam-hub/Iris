@@ -143,6 +143,7 @@ export default function Dashboard() {
             predictions={countryRisks}
             onCountrySelect={setSelectedCountry}
             selectedCountry={selectedCountry}
+            year={year}
           />
 
           {/* Bottom Panels */}

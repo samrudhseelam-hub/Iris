@@ -639,19 +639,17 @@ export function getCountryTimeSeries(countryCode, diseaseName) {
 }
 
 export function applyInterventions(baseRisk, interventions, disease, country) {
-  // Interventions: each is a 0–100 slider value representing % effort applied
   const {
-    vaccinationRollout = 0,     // reduces vaccination gap
-    waterSanitation = 0,        // reduces waterborne risk
-    vectorControl = 0,          // reduces vector-borne risk
-    healthcareAccess = 0,       // reduces infrastructure gap
-    surveillanceStrength = 0,   // reduces uncertainty / improves response
-    travelRestrictions = 0,     // reduces respiratory spread
+    vaccinationRollout = 0,
+    waterSanitation = 0,
+    vectorControl = 0,
+    healthcareAccess = 0,
+    surveillanceStrength = 0,
+    travelRestrictions = 0,
   } = interventions;
 
   let reduction = 0;
 
-  // Each intervention has disease-specific efficacy
   const vaccEfficacy = disease.type === "respiratory" ? 0.0035 : disease.type === "vector-borne" ? 0.0015 : 0.0010;
   const sanEfficacy  = disease.type === "waterborne"  ? 0.0040 : 0.0010;
   const vecEfficacy  = disease.type === "vector-borne" ? 0.0045 : 0.0005;
@@ -666,10 +664,20 @@ export function applyInterventions(baseRisk, interventions, disease, country) {
   reduction += surveillanceStrength * survEfficacy;
   reduction += travelRestrictions * travelEfficacy;
 
-  // Diminishing returns above 60% combined effort
   const combinedEffort = Object.values(interventions).reduce((a, b) => a + b, 0) / 600;
   const diminishFactor = combinedEffort > 0.6 ? 0.75 : 1.0;
 
   const adjustedRisk = baseRisk * (1 - reduction * diminishFactor);
-  return Math.max(0.5, adjustedRisk); // never goes to absolute zero
+  return Math.max(0.5, adjustedRisk);
+}
+
+// ─── Sub-region risk (seeded variation around country baseline) ───────────────
+// Used by GlobalMap to color admin-1 provinces/states.
+export function getSubRegionRisk(countryCode, subRegionName, diseaseName, year, countryBaseRisk) {
+  const seed = hash(`sub3-${countryCode}-${subRegionName}-${diseaseName}-${year}`);
+  const rng = seededRandom(seed);
+  // ±25% variation around the country baseline, biased by sub-region name length (proxy for diversity)
+  const bias = (subRegionName.length % 7) / 7 * 0.10 - 0.05;
+  const variation = (rng() - 0.5) * 0.50 + bias;
+  return Math.max(1.0, Math.min(93, countryBaseRisk * (1 + variation)));
 }

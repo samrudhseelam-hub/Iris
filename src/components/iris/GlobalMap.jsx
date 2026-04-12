@@ -2,17 +2,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { getSubRegionRisk } from "@/lib/outbreakData";
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 function riskToColor(risk) {
   if (risk === null || risk === undefined) return "#d1d5db";
   const t = Math.min(1, risk / 85);
   const stops = [
-    [220, 252, 231],  // 0   – very light green
-    [74,  222, 128],  // 20% – green
-    [251, 191,  36],  // 40% – amber
-    [249, 115,  22],  // 60% – orange
-    [220,  38,  38],  // 85%+– red
+    [220, 252, 231],
+    [74,  222, 128],
+    [251, 191,  36],
+    [249, 115,  22],
+    [220,  38,  38],
   ];
   const scaled = t * (stops.length - 1);
   const lo = Math.floor(scaled);
@@ -40,17 +41,23 @@ function riskLabel(risk) {
   return "Critical";
 }
 
-function fmtCases(n) {
+function fmtNum(n) {
   if (!n) return "—";
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
   if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
-  if (n >= 1000) return (n / 1000).toFixed(0) + "K";
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + "K";
   return String(n);
 }
 
 const TREND_ARROW = { rising: "↑", falling: "↓", stable: "→" };
 const TREND_COLOR = { rising: "#ef4444", falling: "#22c55e", stable: "#94a3b8" };
 
-// ── ISO A2 → our country code map ─────────────────────────────────────────────
+// ── Countries that get sub-national breakdown ──────────────────────────────────
+const SUBNATIONAL_COUNTRIES = new Set([
+  "US","CN","IN","BR","RU","AU","CA","NG","ID","MX","AR","ZA","CD","ET","PK",
+]);
+
+// ── ISO resolution ────────────────────────────────────────────────────────────
 const ISO_MAP = {
   NG:"NG",IN:"IN",BR:"BR",US:"US",CN:"CN",ID:"ID",PK:"PK",BD:"BD",RU:"RU",
   MX:"MX",JP:"JP",ET:"ET",PH:"PH",EG:"EG",CD:"CD",DE:"DE",GB:"GB",FR:"FR",
@@ -65,229 +72,268 @@ const ISO_MAP = {
   CF:"CF",CG:"CG",SS:"SS",BI:"BI",NI:"NI","DO":"DO",ER:"ER",
 };
 
-// Also map by country name as fallback
 const NAME_MAP = {
   "Nigeria":"NG","India":"IN","Brazil":"BR","United States of America":"US","China":"CN",
   "Indonesia":"ID","Pakistan":"PK","Bangladesh":"BD","Russia":"RU","Mexico":"MX",
-  "Japan":"JP","Ethiopia":"ET","Philippines":"PH","Egypt":"EG","Democratic Republic of the Congo":"CD",
-  "Germany":"DE","United Kingdom":"GB","France":"FR","Thailand":"TH","Tanzania":"TZ",
-  "South Africa":"ZA","Kenya":"KE","Colombia":"CO","Italy":"IT","Myanmar":"MM",
-  "South Korea":"KR","Sudan":"SD","Uganda":"UG","Argentina":"AR","Algeria":"DZ",
-  "Iraq":"IQ","Afghanistan":"AF","Canada":"CA","Morocco":"MA","Saudi Arabia":"SA",
-  "Peru":"PE","Angola":"AO","Mozambique":"MZ","Ghana":"GH","Yemen":"YE","Nepal":"NP",
-  "Venezuela":"VE","Madagascar":"MG","Australia":"AU","Cameroon":"CM","Niger":"NE",
-  "Sri Lanka":"LK","Mali":"ML","Guatemala":"GT","Senegal":"SN","Cambodia":"KH",
-  "Chad":"TD","Somalia":"SO","Zambia":"ZM","Zimbabwe":"ZW","Rwanda":"RW","Guinea":"GN",
+  "Japan":"JP","Ethiopia":"ET","Philippines":"PH","Egypt":"EG",
+  "Democratic Republic of the Congo":"CD","Germany":"DE","United Kingdom":"GB",
+  "France":"FR","Thailand":"TH","Tanzania":"TZ","South Africa":"ZA","Kenya":"KE",
+  "Colombia":"CO","Italy":"IT","Myanmar":"MM","South Korea":"KR","Sudan":"SD",
+  "Uganda":"UG","Argentina":"AR","Algeria":"DZ","Iraq":"IQ","Afghanistan":"AF",
+  "Canada":"CA","Morocco":"MA","Saudi Arabia":"SA","Peru":"PE","Angola":"AO",
+  "Mozambique":"MZ","Ghana":"GH","Yemen":"YE","Nepal":"NP","Venezuela":"VE",
+  "Madagascar":"MG","Australia":"AU","Cameroon":"CM","Niger":"NE","Sri Lanka":"LK",
+  "Mali":"ML","Guatemala":"GT","Senegal":"SN","Cambodia":"KH","Chad":"TD",
+  "Somalia":"SO","Zambia":"ZM","Zimbabwe":"ZW","Rwanda":"RW","Guinea":"GN",
   "Burkina Faso":"BF","Malawi":"MW","Bolivia":"BO","Haiti":"HT","Sweden":"SE",
   "Portugal":"PT","Israel":"IL","Sierra Leone":"SL","Liberia":"LR",
   "Papua New Guinea":"PG","Laos":"LA","Vietnam":"VN","Poland":"PL","Spain":"ES",
-  "Turkey":"TR","Iran":"IR","Ukraine":"UA","Malaysia":"MY","Ivory Coast":"CI",
-  "Côte d'Ivoire":"CI","Uzbekistan":"UZ","Chile":"CL","Netherlands":"NL","Romania":"RO",
-  "Ecuador":"EC","Honduras":"HN","Cuba":"CU","New Zealand":"NZ","Norway":"NO",
-  "Finland":"FI","Denmark":"DK","Singapore":"SG","Togo":"TG","Benin":"BJ",
-  "Central African Republic":"CF","Republic of the Congo":"CG","Congo":"CG",
-  "South Sudan":"SS","Burundi":"BI","Nicaragua":"NI","Dominican Republic":"DO",
-  "Eritrea":"ER",
+  "Turkey":"TR","Iran":"IR","Ukraine":"UA","Malaysia":"MY","Côte d'Ivoire":"CI",
+  "Ivory Coast":"CI","Uzbekistan":"UZ","Chile":"CL","Netherlands":"NL",
+  "Romania":"RO","Ecuador":"EC","Honduras":"HN","Cuba":"CU","New Zealand":"NZ",
+  "Norway":"NO","Finland":"FI","Denmark":"DK","Singapore":"SG","Togo":"TG",
+  "Benin":"BJ","Central African Republic":"CF","Republic of the Congo":"CG",
+  "Congo":"CG","South Sudan":"SS","Burundi":"BI","Nicaragua":"NI",
+  "Dominican Republic":"DO","Eritrea":"ER",
 };
 
-function resolveCode(props) {
+function resolveCountryCode(props) {
   const iso2 = props?.ISO_A2 || props?.iso_a2 || "";
   if (iso2 && iso2 !== "-99" && ISO_MAP[iso2]) return ISO_MAP[iso2];
   const name = props?.NAME || props?.ADMIN || props?.name || "";
   return NAME_MAP[name] || null;
 }
 
-// ── Inner map component (has access to map instance) ──────────────────────────
-function ChoroplethLayer({ geoJson, riskMap, isDelta, onCountrySelect, selectedCode }) {
+function resolveAdmin1Code(props) {
+  // admin-1 feature: get parent country code
+  const iso = props?.iso_a2 || props?.ISO_A2 || "";
+  if (iso && ISO_MAP[iso]) return ISO_MAP[iso];
+  // try adm0_a3 (3-letter ISO)
+  const a3 = props?.adm0_a3 || "";
+  const A3_MAP = {
+    USA:"US",CHN:"CN",IND:"IN",BRA:"BR",RUS:"RU",AUS:"AU",CAN:"CA",
+    NGA:"NG",IDN:"ID",MEX:"MX",ARG:"AR",ZAF:"ZA",COD:"CD",ETH:"ET",PAK:"PK",
+  };
+  return A3_MAP[a3] || null;
+}
+
+// ── Tooltip builder ────────────────────────────────────────────────────────────
+function buildTooltip(data, regionName, isDelta) {
+  if (!data) {
+    return `<div style="font:12px Inter,sans-serif;padding:2px 0">
+      <b style="font-size:13px">${regionName}</b>
+      <div style="color:#94a3b8;margin-top:4px;font-size:11px">No prediction data</div>
+    </div>`;
+  }
+  if (isDelta && data.delta !== undefined) {
+    const dColor = data.delta > 0 ? "#ef4444" : data.delta < 0 ? "#22c55e" : "#94a3b8";
+    return `<div style="font:12px Inter,sans-serif;min-width:190px">
+      <b style="font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px">${data.country}</b>
+      <table style="width:100%;border-spacing:0 3px;font-size:11px">
+        <tr><td style="color:#64748b">Disease</td><td style="font-weight:600;text-align:right">${data.disease}</td></tr>
+        <tr><td style="color:#64748b">Scenario A</td><td style="font-weight:700;text-align:right">${(data.riskA ?? 0).toFixed(1)}%</td></tr>
+        <tr><td style="color:#64748b">Scenario B</td><td style="font-weight:700;text-align:right">${(data.riskB ?? 0).toFixed(1)}%</td></tr>
+        <tr><td style="color:#64748b">Delta</td><td style="font-weight:700;text-align:right;color:${dColor}">${data.delta > 0 ? "+" : ""}${(data.delta ?? 0).toFixed(1)}%</td></tr>
+      </table>
+    </div>`;
+  }
+  const rColor = riskToColor(data.risk);
+  const tColor = TREND_COLOR[data.trend] || "#94a3b8";
+  const isSubRegion = !!data._subRegion;
+  return `<div style="font:12px Inter,sans-serif;min-width:205px">
+    <b style="font-size:13px;display:block;margin-bottom:2px">${isSubRegion ? data._subRegion : data.country}</b>
+    ${isSubRegion ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.country} · ${data.region}</div>` : `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.region}</div>`}
+    <table style="width:100%;border-spacing:0 3px;font-size:11px">
+      <tr>
+        <td style="color:#64748b">Disease</td>
+        <td style="font-weight:600;text-align:right">${data.disease}</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b">Risk Score</td>
+        <td style="font-weight:700;text-align:right">
+          <span style="color:${rColor}">${(data.risk ?? 0).toFixed(1)}%</span>
+          <span style="color:#94a3b8;font-weight:400"> — ${riskLabel(data.risk)}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="color:#64748b">Confidence</td>
+        <td style="text-align:right;font-weight:600">${data.confidence}%</td>
+      </tr>
+      <tr>
+        <td style="color:#64748b">Trend</td>
+        <td style="text-align:right;font-weight:600;color:${tColor}">
+          ${TREND_ARROW[data.trend] || "→"} ${data.yoyGrowth > 0 ? "+" : ""}${data.yoyGrowth}% YoY
+        </td>
+      </tr>
+      ${!isSubRegion && data.estimatedCases ? `<tr><td style="color:#64748b">Est. Cases</td><td style="text-align:right;font-weight:600">${fmtNum(data.estimatedCases)}</td></tr>` : ""}
+    </table>
+    ${!isSubRegion ? `<div style="margin-top:6px;font-size:10px;color:#94a3b8">Click to explore full breakdown →</div>` : ""}
+  </div>`;
+}
+
+// ── Map layers component ───────────────────────────────────────────────────────
+function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, selectedCode, year }) {
   const map = useMap();
-  const geojsonLayerRef = useRef(null);
+  const countryLayerRef = useRef(null);
+  const admin1LayerRef = useRef(null);
 
-  const getStyle = useCallback((feature) => {
-    const code = resolveCode(feature.properties);
-    const data = code ? riskMap[code] : null;
-    const isSelected = code && selectedCode === code;
+  const OUTLINE = { color: "#111827", weight: 0.5, opacity: 0.65 };
+  const OUTLINE_SUB = { color: "#111827", weight: 0.3, opacity: 0.5 };
 
-    let fillColor = "#d1d5db";
-    let fillOpacity = 0.15;
-
-    if (data) {
-      fillOpacity = isSelected ? 0.90 : 0.72;
-      if (isDelta && data.delta !== undefined) {
-        fillColor = deltaToColor(data.delta);
-      } else {
-        fillColor = riskToColor(data.risk);
-      }
+  function styleCountry(feature) {
+    const code = resolveCountryCode(feature.properties);
+    // Hide subnational countries — admin-1 layer handles them
+    if (code && SUBNATIONAL_COUNTRIES.has(code) && admin1Geo) {
+      return { fillColor: "transparent", fillOpacity: 0, ...OUTLINE, weight: 0.8 };
     }
-
-    return {
-      fillColor,
-      fillOpacity,
-      color: isSelected ? "#1e293b" : "#ffffff",
-      weight: isSelected ? 2 : 0.5,
-      opacity: 1,
-    };
-  }, [riskMap, isDelta, selectedCode]);
-
-  const onEachFeature = useCallback((feature, layer) => {
-    const code = resolveCode(feature.properties);
     const data = code ? riskMap[code] : null;
-    const countryName = feature.properties?.NAME || feature.properties?.ADMIN || feature.properties?.name || "Unknown";
+    let fillColor = "#d1d5db", fillOpacity = 0.15;
+    if (data) {
+      fillOpacity = 0.75;
+      fillColor = isDelta && data.delta !== undefined ? deltaToColor(data.delta) : riskToColor(data.risk);
+    }
+    return { fillColor, fillOpacity, ...OUTLINE };
+  }
 
-    // Hover highlight
+  function styleAdmin1(feature) {
+    const countryCode = resolveAdmin1Code(feature.properties);
+    if (!countryCode || !SUBNATIONAL_COUNTRIES.has(countryCode)) return { fillOpacity: 0, ...OUTLINE_SUB };
+    const countryData = riskMap[countryCode];
+    if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_SUB };
+
+    const subName = feature.properties?.name || feature.properties?.NAME || "";
+    const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
+    let fillColor;
+    if (isDelta && countryData.delta !== undefined) {
+      const subDelta = countryData.delta * (0.6 + (subRisk / countryData.risk) * 0.4);
+      fillColor = deltaToColor(subDelta);
+    } else {
+      fillColor = riskToColor(subRisk);
+    }
+    return { fillColor, fillOpacity: 0.72, ...OUTLINE_SUB };
+  }
+
+  function onEachCountry(feature, layer) {
+    const code = resolveCountryCode(feature.properties);
+    const data = code ? riskMap[code] : null;
+    const name = feature.properties?.NAME || feature.properties?.ADMIN || feature.properties?.name || "Unknown";
+    // Skip subnational countries if admin1 is loaded (handled by that layer)
+    if (code && SUBNATIONAL_COUNTRIES.has(code) && admin1Geo) {
+      layer.on({ click: () => data && onCountrySelect?.(data) });
+      return;
+    }
+    attachInteractions(layer, data, name, styleCountry, feature);
+  }
+
+  function onEachAdmin1(feature, layer) {
+    const countryCode = resolveAdmin1Code(feature.properties);
+    if (!countryCode || !SUBNATIONAL_COUNTRIES.has(countryCode)) return;
+    const countryData = riskMap[countryCode];
+    const subName = feature.properties?.name || feature.properties?.NAME || "";
+    let subData = null;
+    if (countryData) {
+      const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
+      subData = {
+        ...countryData,
+        risk: Math.round(subRisk * 10) / 10,
+        _subRegion: subName,
+      };
+    }
+    attachInteractions(layer, subData, subName, styleAdmin1, feature);
+  }
+
+  function attachInteractions(layer, data, name, styleFn, feature) {
     layer.on({
       mouseover(e) {
-        e.target.setStyle({
-          fillOpacity: data ? 0.92 : 0.30,
-          weight: 1.5,
-          color: "#334155",
-        });
+        e.target.setStyle({ weight: 1.5, color: "#0f172a", fillOpacity: data ? 0.90 : 0.30 });
         e.target.bringToFront();
-
-        // Build tooltip HTML
-        let html = "";
-        if (!data) {
-          html = `<div style="font-family:Inter,sans-serif;font-size:12px;padding:2px 0">
-            <b style="font-size:13px">${countryName}</b>
-            <div style="color:#94a3b8;margin-top:4px;font-size:11px">No data available</div>
-          </div>`;
-        } else if (isDelta && data.delta !== undefined) {
-          const dColor = data.delta > 0 ? "#ef4444" : data.delta < 0 ? "#22c55e" : "#94a3b8";
-          html = `<div style="font-family:Inter,sans-serif;font-size:12px;min-width:190px">
-            <b style="font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px">${data.country}</b>
-            <table style="width:100%;border-spacing:0 3px;font-size:11px">
-              <tr><td style="color:#64748b">Disease</td><td style="font-weight:600;text-align:right">${data.disease}</td></tr>
-              <tr><td style="color:#64748b">Scenario A Risk</td><td style="font-weight:700;text-align:right">${(data.riskA ?? 0).toFixed(1)}%</td></tr>
-              <tr><td style="color:#64748b">Scenario B Risk</td><td style="font-weight:700;text-align:right">${(data.riskB ?? 0).toFixed(1)}%</td></tr>
-              <tr><td style="color:#64748b">Delta</td><td style="font-weight:700;text-align:right;color:${dColor}">${data.delta > 0 ? "+" : ""}${(data.delta ?? 0).toFixed(1)}%</td></tr>
-            </table>
-          </div>`;
-        } else {
-          const rColor = riskToColor(data.risk);
-          const tColor = TREND_COLOR[data.trend] || "#94a3b8";
-          html = `<div style="font-family:Inter,sans-serif;font-size:12px;min-width:200px">
-            <b style="font-size:13px;display:block;margin-bottom:6px;border-bottom:1px solid #e2e8f0;padding-bottom:4px">${data.country}</b>
-            <table style="width:100%;border-spacing:0 3px;font-size:11px">
-              <tr>
-                <td style="color:#64748b">Disease</td>
-                <td style="font-weight:600;text-align:right">${data.disease}</td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Risk Score</td>
-                <td style="font-weight:700;text-align:right">
-                  <span style="color:${rColor}">${(data.risk ?? 0).toFixed(1)}%</span>
-                  <span style="color:#94a3b8;font-weight:400"> — ${riskLabel(data.risk)}</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Confidence</td>
-                <td style="text-align:right;font-weight:600">${data.confidence}%</td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Trend</td>
-                <td style="text-align:right;font-weight:600;color:${tColor}">
-                  ${TREND_ARROW[data.trend] || "→"} ${data.yoyGrowth > 0 ? "+" : ""}${data.yoyGrowth}% YoY
-                </td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Region</td>
-                <td style="text-align:right;font-weight:600">${data.region}</td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Est. Cases</td>
-                <td style="text-align:right;font-weight:600">${fmtCases(data.estimatedCases)}</td>
-              </tr>
-              <tr>
-                <td style="color:#64748b">Population</td>
-                <td style="text-align:right;font-weight:600">${fmtCases(data.population)}</td>
-              </tr>
-            </table>
-            <div style="margin-top:6px;font-size:10px;color:#94a3b8">Click to explore full breakdown →</div>
-          </div>`;
-        }
-
+        const html = buildTooltip(data, name, isDelta);
         layer.bindTooltip(html, {
-          sticky: false,
-          direction: "top",
-          offset: [0, -4],
-          opacity: 1,
+          sticky: false, direction: "top", offset: [0, -4], opacity: 1,
           className: "iris-tooltip",
         }).openTooltip(e.latlng);
       },
       mouseout(e) {
-        geojsonLayerRef.current?.resetStyle(e.target);
+        e.target.setStyle(styleFn(feature));
         e.target.closeTooltip();
       },
       click() {
-        if (data) onCountrySelect?.(data);
+        if (data && !data._subRegion) onCountrySelect?.(data);
       },
     });
-  }, [riskMap, isDelta, onCountrySelect]);
+  }
 
-  // Render/re-render GeoJSON imperatively so styles are always fresh
+  // Build/rebuild country layer
   useEffect(() => {
-    if (!geoJson || !map) return;
-
-    // Remove old layer
-    if (geojsonLayerRef.current) {
-      map.removeLayer(geojsonLayerRef.current);
-    }
-
-    const layer = L.geoJSON(geoJson, {
-      style: getStyle,
-      onEachFeature,
-    });
-
+    if (!countryGeo || !map) return;
+    if (countryLayerRef.current) map.removeLayer(countryLayerRef.current);
+    const layer = L.geoJSON(countryGeo, { style: styleCountry, onEachFeature: onEachCountry });
     layer.addTo(map);
-    geojsonLayerRef.current = layer;
+    countryLayerRef.current = layer;
+    return () => { if (countryLayerRef.current) map.removeLayer(countryLayerRef.current); };
+  }, [countryGeo, riskMap, isDelta, admin1Geo, selectedCode]);
 
-    return () => {
-      if (geojsonLayerRef.current) {
-        map.removeLayer(geojsonLayerRef.current);
-      }
-    };
-  }, [geoJson, riskMap, isDelta, selectedCode]); // eslint-disable-line
+  // Build/rebuild admin-1 layer
+  useEffect(() => {
+    if (!admin1Geo || !map) return;
+    if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current);
+    const layer = L.geoJSON(admin1Geo, { style: styleAdmin1, onEachFeature: onEachAdmin1 });
+    layer.addTo(map);
+    admin1LayerRef.current = layer;
+    // Refresh country layer so it hides the base shape correctly
+    if (countryLayerRef.current) {
+      countryLayerRef.current.setStyle(styleCountry);
+    }
+    return () => { if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current); };
+  }, [admin1Geo, riskMap, isDelta, selectedCode, year]);
 
   return null;
 }
 
-// ── GeoJSON fetcher (cached) ──────────────────────────────────────────────────
-let cachedGeoJson = null;
-const GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
+// ── GeoJSON cache ─────────────────────────────────────────────────────────────
+let cachedCountryGeo = null;
+let cachedAdmin1Geo = null;
 
-export default function GlobalMap({ predictions, onCountrySelect, selectedCountry, isDelta = false }) {
-  const [geoJson, setGeoJson] = useState(cachedGeoJson);
-  const [loading, setLoading] = useState(!cachedGeoJson);
+const COUNTRY_GEO_URL = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
+const ADMIN1_GEO_URL = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_1_states_provinces.geojson";
+
+export default function GlobalMap({ predictions, onCountrySelect, selectedCountry, isDelta = false, year = 2026 }) {
+  const [countryGeo, setCountryGeo] = useState(cachedCountryGeo);
+  const [admin1Geo, setAdmin1Geo] = useState(cachedAdmin1Geo);
+  const [loading, setLoading] = useState(!cachedCountryGeo);
 
   useEffect(() => {
-    if (cachedGeoJson) { setGeoJson(cachedGeoJson); setLoading(false); return; }
-    fetch(GEO_URL)
-      .then(r => r.json())
-      .then(data => { cachedGeoJson = data; setGeoJson(data); setLoading(false); })
+    const fetchCountry = cachedCountryGeo
+      ? Promise.resolve(cachedCountryGeo)
+      : fetch(COUNTRY_GEO_URL).then(r => r.json()).then(d => { cachedCountryGeo = d; return d; });
+
+    const fetchAdmin1 = cachedAdmin1Geo
+      ? Promise.resolve(cachedAdmin1Geo)
+      : fetch(ADMIN1_GEO_URL).then(r => r.json()).then(d => { cachedAdmin1Geo = d; return d; });
+
+    Promise.all([fetchCountry, fetchAdmin1])
+      .then(([cGeo, aGeo]) => { setCountryGeo(cGeo); setAdmin1Geo(aGeo); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  // Build lookup by country code
   const riskMap = {};
-  for (const p of (predictions || [])) {
-    riskMap[p.countryCode] = p;
-  }
+  for (const p of (predictions || [])) riskMap[p.countryCode] = p;
 
   const selectedCode = selectedCountry?.countryCode || null;
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden relative">
-      {/* Tooltip styles */}
       <style>{`
         .iris-tooltip {
           background: white !important;
           border: 1px solid #e2e8f0 !important;
           border-radius: 10px !important;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
-          padding: 10px 12px !important;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.13) !important;
+          padding: 10px 13px !important;
           font-family: Inter, sans-serif !important;
-          max-width: 240px !important;
+          max-width: 250px !important;
         }
-        .iris-tooltip::before { display: none !important; }
+        .iris-tooltip::before,
         .leaflet-tooltip-top.iris-tooltip::before { display: none !important; }
       `}</style>
 
@@ -295,35 +341,28 @@ export default function GlobalMap({ predictions, onCountrySelect, selectedCountr
         <div className="absolute inset-0 flex items-center justify-center bg-muted/40 z-20 rounded-xl">
           <div className="flex flex-col items-center gap-2">
             <div className="w-7 h-7 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-muted-foreground">Loading world map…</p>
+            <p className="text-xs text-muted-foreground">Loading map data…</p>
           </div>
         </div>
       )}
 
       <div style={{ height: 480 }}>
         <MapContainer
-          center={[15, 10]}
-          zoom={2}
+          center={[15, 10]} zoom={2}
           className="h-full w-full"
-          scrollWheelZoom
-          minZoom={2}
-          maxZoom={8}
+          scrollWheelZoom minZoom={2} maxZoom={8}
           style={{ background: "#edf2f7" }}
         >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-            opacity={0.35}
-          />
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
-            opacity={0.55}
-          />
-          <ChoroplethLayer
-            geoJson={geoJson}
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" opacity={0.30} />
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png" opacity={0.55} />
+          <MapLayers
+            countryGeo={countryGeo}
+            admin1Geo={admin1Geo}
             riskMap={riskMap}
             isDelta={isDelta}
             onCountrySelect={onCountrySelect}
             selectedCode={selectedCode}
+            year={year}
           />
         </MapContainer>
       </div>
@@ -333,33 +372,23 @@ export default function GlobalMap({ predictions, onCountrySelect, selectedCountr
         {!isDelta ? (
           <>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Outbreak Risk</p>
-            <div
-              className="h-3 w-32 rounded-full mb-1.5"
-              style={{ background: "linear-gradient(to right, #4ade80, #fbbf24, #f97316, #dc2626)" }}
-            />
+            <div className="h-3 w-32 rounded-full mb-1.5" style={{ background: "linear-gradient(to right,#4ade80,#fbbf24,#f97316,#dc2626)" }} />
             <div className="flex justify-between text-[9px] text-slate-400 w-32 mb-1.5">
               <span>Low</span><span>Moderate</span><span>Critical</span>
             </div>
             <div className="text-[9px] text-slate-400">
               <span style={{ color: "#ef4444" }}>↑</span> Rising &nbsp;
               <span style={{ color: "#22c55e" }}>↓</span> Falling &nbsp;
-              <span style={{ color: "#94a3b8" }}>→</span> Stable &nbsp;·&nbsp; Grey = no data
+              <span style={{ color: "#94a3b8" }}>→</span> Stable
             </div>
           </>
         ) : (
           <>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Risk Delta</p>
             <div className="space-y-1">
-              {[
-                ["#22c55e", "Decrease >4%"],
-                ["#86efac", "Decrease 1–4%"],
-                ["#94a3b8", "Stable ±1%"],
-                ["#fbbf24", "Increase 1–4%"],
-                ["#f97316", "Increase 4–10%"],
-                ["#ef4444", "Increase >10%"],
-              ].map(([c, l]) => (
+              {[["#22c55e","Decrease >4%"],["#86efac","Decrease 1–4%"],["#94a3b8","Stable ±1%"],["#fbbf24","Increase 1–4%"],["#f97316","Increase 4–10%"],["#ef4444","Increase >10%"]].map(([c,l]) => (
                 <div key={l} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: c }} />
+                  <div className="w-3 h-3 rounded-sm" style={{ background: c }} />
                   <span className="text-[10px] text-slate-500">{l}</span>
                 </div>
               ))}
