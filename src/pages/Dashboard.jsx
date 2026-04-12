@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Download } from "lucide-react";
+import { Shield, Download, ArrowLeftRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 import Sidebar from "@/components/iris/Sidebar";
@@ -78,6 +79,11 @@ export default function Dashboard() {
                 disease={diseaseFilter}
                 onDiseaseChange={setDiseaseFilter}
               />
+              <Link to="/compare">
+                <Button variant="outline" size="sm" className="hidden md:flex items-center gap-1.5 text-xs">
+                  <ArrowLeftRight className="w-3.5 h-3.5" /> Compare Years
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
