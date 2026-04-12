@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -51,10 +51,6 @@ function fmtNum(n) {
 
 const TREND_ARROW = { rising: "↑", falling: "↓", stable: "→" };
 const TREND_COLOR = { rising: "#ef4444", falling: "#22c55e", stable: "#94a3b8" };
-
-// All countries get sub-national breakdown
-const SUBNATIONAL_COUNTRIES = "ALL"; // sentinel — every country
-function isSubnational(code) { return !!code; }
 
 // ── ISO resolution ────────────────────────────────────────────────────────────
 const ISO_MAP = {
@@ -120,11 +116,45 @@ const A3_TO_A2 = {
   HUN:"HU",BGR:"BG",SRB:"RS",BIH:"BA",ALB:"AL",MKD:"MK",MDA:"MD",BLR:"BY",LTU:"LT",
   LVA:"LV",EST:"EE",AUT:"AT",CHE:"CH",BEL:"BE",LUX:"LU",IRL:"IE",ISL:"IS",CYP:"CY",
   TUN:"TN",LBN:"LB",JOR:"JO",PSE:"PS",KWT:"KW",QAT:"QA",ARE:"AE",OMN:"OM",BHR:"BH",
-  KGZ:"KG",TJK:"TJ",TKM:"TM",AZE:"AZ",GEO:"GE",ARM:"AM",MNG:"MN",BTN:"BT",MDV:"MV",
-  BWA:"BW",NAM:"NA",LSO:"LS",SWZ:"SZ",COM:"KM",MUS:"MU",SYC:"SC",DJI:"DJ",ERI:"ER",
+  KGZ:"KG",TJK:"TJ",TKM:"TM",AZE:"AZ",GEO:"GE",ARM:"AM",BTN:"BT",MDV:"MV",
+  BWA:"BW",NAM:"NA",LSO:"LS",SWZ:"SZ",COM:"KM",MUS:"MU",SYC:"SC",DJI:"DJ",
 };
 
-// US states → 6 broad risk regions
+// Risk-board style continent macro-regions per country code
+const COUNTRY_MACRO_REGION = {
+  US:"North America", CA:"North America", MX:"North America",
+  GT:"Central America",HN:"Central America",NI:"Central America",CU:"Central America",
+  DO:"Central America",HT:"Central America",
+  BR:"South America",AR:"South America",CO:"South America",PE:"South America",
+  VE:"South America",CL:"South America",EC:"South America",BO:"South America",
+  GB:"Western Europe",FR:"Western Europe",DE:"Western Europe",IT:"Western Europe",
+  ES:"Western Europe",PT:"Western Europe",NL:"Western Europe",SE:"Western Europe",
+  NO:"Western Europe",FI:"Western Europe",DK:"Western Europe",AT:"Western Europe",
+  CH:"Western Europe",IE:"Western Europe",IS:"Western Europe",
+  RU:"Eastern Europe",UA:"Eastern Europe",PL:"Eastern Europe",RO:"Eastern Europe",
+  BY:"Eastern Europe",RS:"Eastern Europe",BG:"Eastern Europe",SK:"Eastern Europe",
+  CZ:"Eastern Europe",HU:"Eastern Europe",HR:"Eastern Europe",
+  EG:"North Africa",DZ:"North Africa",MA:"North Africa",TN:"North Africa",LY:"North Africa",
+  SA:"Middle East",IQ:"Middle East",IR:"Middle East",TR:"Middle East",YE:"Middle East",
+  SY:"Middle East",JO:"Middle East",IL:"Middle East",LB:"Middle East",
+  AE:"Middle East",KW:"Middle East",QA:"Middle East",OM:"Middle East",BH:"Middle East",
+  NG:"West Africa",GH:"West Africa",SN:"West Africa",ML:"West Africa",
+  NE:"West Africa",BF:"West Africa",CI:"West Africa",GN:"West Africa",
+  TG:"West Africa",BJ:"West Africa",SL:"West Africa",LR:"West Africa",
+  ET:"East Africa",KE:"East Africa",TZ:"East Africa",UG:"East Africa",
+  RW:"East Africa",SD:"East Africa",SS:"East Africa",SO:"East Africa",
+  ER:"East Africa",BI:"East Africa",MG:"East Africa",MZ:"East Africa",
+  CD:"Central Africa",CM:"Central Africa",CF:"Central Africa",CG:"Central Africa",AO:"Central Africa",
+  ZA:"Southern Africa",ZM:"Southern Africa",ZW:"Southern Africa",MW:"Southern Africa",
+  IN:"South Asia",PK:"South Asia",BD:"South Asia",NP:"South Asia",LK:"South Asia",AF:"South Asia",
+  ID:"Southeast Asia",PH:"Southeast Asia",VN:"Southeast Asia",TH:"Southeast Asia",
+  MM:"Southeast Asia",MY:"Southeast Asia",KH:"Southeast Asia",LA:"Southeast Asia",SG:"Southeast Asia",
+  CN:"East Asia",JP:"East Asia",KR:"East Asia",MN:"East Asia",
+  UZ:"Central Asia",KZ:"Central Asia",KG:"Central Asia",TJ:"Central Asia",TM:"Central Asia",
+  AU:"Oceania",NZ:"Oceania",PG:"Oceania",
+};
+
+// US states → broad risk regions
 const US_STATE_TO_REGION = {
   "Maine":"Northeast","New Hampshire":"Northeast","Vermont":"Northeast","Massachusetts":"Northeast",
   "Rhode Island":"Northeast","Connecticut":"Northeast","New York":"Northeast","New Jersey":"Northeast",
@@ -176,7 +206,9 @@ function buildTooltip(data, regionName, isDelta) {
   const isSubRegion = !!data._subRegion;
   return `<div style="font:12px Inter,sans-serif;min-width:205px">
     <b style="font-size:13px;display:block;margin-bottom:2px">${isSubRegion ? data._subRegion : data.country}</b>
-    ${isSubRegion ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.country} · ${data.region}</div>` : `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.region}</div>`}
+    ${isSubRegion
+      ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.country} · ${data.region}</div>`
+      : `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.region}</div>`}
     <table style="width:100%;border-spacing:0 3px;font-size:11px">
       <tr>
         <td style="color:#64748b">Disease</td>
@@ -231,7 +263,9 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const countryData = riskMap[countryCode];
     if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_SUB };
 
-    const subName = feature.properties?.name || feature.properties?.NAME || "";
+    const rawName = feature.properties?.name || feature.properties?.NAME || "";
+    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
+    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
     const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
     let fillColor;
     if (isDelta && countryData.delta !== undefined) {
@@ -255,8 +289,8 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     if (!countryCode) return;
     const countryData = riskMap[countryCode];
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
-    // For US: group states into broad regions
-    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : rawName;
+    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
+    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
     let subData = null;
     if (countryData) {
       const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
@@ -290,7 +324,6 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     });
   }
 
-  // Build/rebuild country layer
   useEffect(() => {
     if (!countryGeo || !map) return;
     if (countryLayerRef.current) map.removeLayer(countryLayerRef.current);
@@ -300,17 +333,13 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     return () => { if (countryLayerRef.current) map.removeLayer(countryLayerRef.current); };
   }, [countryGeo, riskMap, isDelta, admin1Geo, selectedCode]);
 
-  // Build/rebuild admin-1 layer
   useEffect(() => {
     if (!admin1Geo || !map) return;
     if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current);
     const layer = L.geoJSON(admin1Geo, { style: styleAdmin1, onEachFeature: onEachAdmin1 });
     layer.addTo(map);
     admin1LayerRef.current = layer;
-    // Refresh country layer so it hides the base shape correctly
-    if (countryLayerRef.current) {
-      countryLayerRef.current.setStyle(styleCountry);
-    }
+    if (countryLayerRef.current) countryLayerRef.current.setStyle(styleCountry);
     return () => { if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current); };
   }, [admin1Geo, riskMap, isDelta, selectedCode, year]);
 
@@ -333,11 +362,9 @@ export default function GlobalMap({ predictions, onCountrySelect, selectedCountr
     const fetchCountry = cachedCountryGeo
       ? Promise.resolve(cachedCountryGeo)
       : fetch(COUNTRY_GEO_URL).then(r => r.json()).then(d => { cachedCountryGeo = d; return d; });
-
     const fetchAdmin1 = cachedAdmin1Geo
       ? Promise.resolve(cachedAdmin1Geo)
       : fetch(ADMIN1_GEO_URL).then(r => r.json()).then(d => { cachedAdmin1Geo = d; return d; });
-
     Promise.all([fetchCountry, fetchAdmin1])
       .then(([cGeo, aGeo]) => { setCountryGeo(cGeo); setAdmin1Geo(aGeo); setLoading(false); })
       .catch(() => setLoading(false));
@@ -345,7 +372,6 @@ export default function GlobalMap({ predictions, onCountrySelect, selectedCountr
 
   const riskMap = {};
   for (const p of (predictions || [])) riskMap[p.countryCode] = p;
-
   const selectedCode = selectedCountry?.countryCode || null;
 
   return (
@@ -394,7 +420,6 @@ export default function GlobalMap({ predictions, onCountrySelect, selectedCountr
         </MapContainer>
       </div>
 
-      {/* Legend */}
       <div className="absolute bottom-4 left-4 bg-white/96 backdrop-blur-sm rounded-xl p-3 z-[1000] shadow-md border border-slate-200">
         {!isDelta ? (
           <>

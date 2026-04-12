@@ -26,6 +26,7 @@ import {
 
 export default function Dashboard() {
   const [year, setYear] = useState(2026);
+  const [quarter, setQuarter] = useState(2);
   const [diseaseFilter, setDiseaseFilter] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(null);
 
@@ -76,6 +77,8 @@ export default function Dashboard() {
               <FilterBar
                 year={year}
                 onYearChange={setYear}
+                quarter={quarter}
+                onQuarterChange={setQuarter}
                 disease={diseaseFilter}
                 onDiseaseChange={setDiseaseFilter}
               />
