@@ -199,14 +199,10 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
 
   function styleCountry(feature) {
     const code = resolveCountryCode(feature.properties);
-    // Hide subnational countries — admin-1 layer handles them
-    if (code && admin1Geo) {
-      return { fillColor: "transparent", fillOpacity: 0, color: "#111827", weight: 0.8, opacity: 0.7 };
-    }
     const data = code ? riskMap[code] : null;
-    let fillColor = "#d1d5db", fillOpacity = 0.15;
+    let fillColor = "#d1d5db", fillOpacity = 0.20;
     if (data) {
-      fillOpacity = 0.75;
+      fillOpacity = 0.78;
       fillColor = isDelta && data.delta !== undefined ? deltaToColor(data.delta) : riskToColor(data.risk);
     }
     return { fillColor, fillOpacity, ...OUTLINE };
@@ -234,11 +230,6 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const code = resolveCountryCode(feature.properties);
     const data = code ? riskMap[code] : null;
     const name = feature.properties?.NAME || feature.properties?.ADMIN || feature.properties?.name || "Unknown";
-    // Skip subnational countries if admin1 is loaded (handled by that layer)
-    if (code && admin1Geo) {
-      layer.on({ click: () => data && onCountrySelect?.(data) });
-      return;
-    }
     attachInteractions(layer, data, name, styleCountry, feature);
   }
 
