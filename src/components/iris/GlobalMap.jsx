@@ -154,41 +154,19 @@ const COUNTRY_MACRO_REGION = {
   AU:"Oceania",NZ:"Oceania",PG:"Oceania",
 };
 
-// Russia oblasts → broad risk regions
+// Russia oblasts → 3 broad macro-regions (no internal borders shown)
 const RU_OBLAST_TO_REGION = {
-  // Western Russia / European Russia
-  "Moscow":"Russia West","Leningrad":"Russia West","Saint Petersburg":"Russia West",
-  "Novgorod":"Russia West","Pskov":"Russia West","Tver'":"Russia West","Yaroslavl'":"Russia West",
-  "Vladimir":"Russia West","Ivanovo":"Russia West","Kostroma":"Russia West","Ryazan'":"Russia West",
-  "Tula":"Russia West","Kaluga":"Russia West","Smolensk":"Russia West","Bryansk":"Russia West",
-  "Oryol":"Russia West","Kursk":"Russia West","Belgorod":"Russia West","Voronezh":"Russia West",
-  "Lipetsk":"Russia West","Tambov":"Russia West","Penza":"Russia West","Mordoviya":"Russia West",
-  "Chuvashiya":"Russia West","Mari-El":"Russia West","Tatarstan":"Russia West",
-  "Ul'yanovsk":"Russia West","Nizhegorod":"Russia West","Kirov":"Russia West",
-  "Arkhangel'sk":"Russia West","Vologda":"Russia West","Murmansk":"Russia West",
-  "Karelia":"Russia West","Komi":"Russia West","Nenets":"Russia West",
-  "Kaliningrad":"Russia West","Pskov":"Russia West",
-  // South / North Caucasus
-  "Krasnodar":"Russia South","Stavropol'":"Russia South","Rostov":"Russia South",
-  "Astrakhan'":"Russia South","Volgograd":"Russia South","Saratov":"Russia South",
-  "Kalmykiya":"Russia South","Adygeya":"Russia South","Karachayevo-Cherkessiya":"Russia South",
-  "Kabardino-Balkariya":"Russia South","North Ossetia":"Russia South","Ingushetiya":"Russia South",
-  "Chechnya":"Russia South","Dagestan":"Russia South",
-  // Ural
-  "Chelyabinsk":"Russia Ural","Sverdlovsk":"Russia Ural","Tyumen'":"Russia Ural",
-  "Kurgan":"Russia Ural","Perm'":"Russia Ural","Bashkortostan":"Russia Ural",
-  "Orenburg":"Russia Ural","Samara":"Russia Ural","Udmurtiya":"Russia Ural",
-  "Khanty-Mansiy":"Russia Ural","Yamalo-Nenets":"Russia Ural",
-  // Siberia
+  // Far East (everything east of ~120°E)
+  "Sakha":"Russia Far East","Amur":"Russia Far East","Khabarovsk":"Russia Far East",
+  "Primorskiy":"Russia Far East","Sakhalin":"Russia Far East","Kamchatka":"Russia Far East",
+  "Magadan":"Russia Far East","Chukotka":"Russia Far East","Yevreyskaya":"Russia Far East",
+  // Siberia (central belt)
   "Omsk":"Russia Siberia","Novosibirsk":"Russia Siberia","Tomsk":"Russia Siberia",
   "Kemerovo":"Russia Siberia","Altay":"Russia Siberia","Altayskiy":"Russia Siberia",
   "Krasnoyarsk":"Russia Siberia","Khakasiya":"Russia Siberia","Tuva":"Russia Siberia",
   "Irkutsk":"Russia Siberia","Buryatiya":"Russia Siberia","Zabaykal'ye":"Russia Siberia",
-  // Far East
-  "Sakha":"Russia Far East","Amur":"Russia Far East","Khabarovsk":"Russia Far East",
-  "Primorskiy":"Russia Far East","Sakhalin":"Russia Far East","Kamchatka":"Russia Far East",
-  "Magadan":"Russia Far East","Chukotka":"Russia Far East","Yevreyskaya":"Russia Far East",
-};
+  "Tyumen'":"Russia Siberia","Khanty-Mansiy":"Russia Siberia","Yamalo-Nenets":"Russia Siberia",
+}; // everything else defaults to "Russia West" via the fallback in getRuRegionKey
 
 // US states → broad risk regions
 const US_STATE_TO_REGION = {
@@ -414,13 +392,12 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     fillLayer.addTo(map);
     admin1LayerRef.current = fillLayer;
 
-    // Layer 2: thin region-border outlines on top (stroke only, no fill)
-    // Show outlines for US and Russia — other countries handled by countryLayer
+    // Layer 2: thin region-border outlines on top (stroke only, no fill) — US only
     const usFeatures = {
       type: "FeatureCollection",
       features: admin1Geo.features.filter(f => {
         const a3 = f.properties?.adm0_a3 || f.properties?.ADM0_A3 || "";
-        return a3 === "USA" || a3 === "RUS";
+        return a3 === "USA";
       }),
     };
     const regionBorderLayer = L.geoJSON(usFeatures, { style: styleRegionBorder });
