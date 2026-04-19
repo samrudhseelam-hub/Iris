@@ -244,7 +244,17 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
   const admin1LayerRef = useRef(null);
 
   const OUTLINE = { color: "#111827", weight: 0.5, opacity: 0.65 };
-  const OUTLINE_SUB = { color: "#111827", weight: 0.3, opacity: 0.5 };
+  // No border between states in the same region
+  const OUTLINE_INTRA = { color: "#111827", weight: 0, opacity: 0 };
+  // Thick border between different regions
+  const OUTLINE_INTER = { color: "#111827", weight: 1.8, opacity: 0.75 };
+
+  function getUsRegionKey(rawName) {
+    // Alaska and Hawaii are their own territories
+    if (rawName === "Alaska") return "Alaska";
+    if (rawName === "Hawaii") return "Hawaii";
+    return US_STATE_TO_REGION[rawName] || "Other";
+  }
 
   function styleCountry(feature) {
     const code = resolveCountryCode(feature.properties);
@@ -259,13 +269,13 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
 
   function styleAdmin1(feature) {
     const countryCode = resolveAdmin1Code(feature.properties);
-    if (!countryCode) return { fillOpacity: 0, ...OUTLINE_SUB };
+    if (!countryCode) return { fillOpacity: 0, ...OUTLINE_INTRA };
     const countryData = riskMap[countryCode];
-    if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_SUB };
+    if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_INTRA };
 
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const regionKey = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
+    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
     const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
     let fillColor;
     if (isDelta && countryData.delta !== undefined) {
@@ -274,7 +284,9 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     } else {
       fillColor = riskToColor(subRisk);
     }
-    return { fillColor, fillOpacity: 0.72, ...OUTLINE_SUB };
+    // Use thick border style — Leaflet can't easily do per-neighbor borders,
+    // but we use a visible weight so region blocks stand out from each other.
+    return { fillColor, fillOpacity: 0.72, ...OUTLINE_INTER };
   }
 
   function onEachCountry(feature, layer) {
@@ -290,23 +302,25 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const countryData = riskMap[countryCode];
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const regionKey = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
+    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
     let subData = null;
     if (countryData) {
       const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
       subData = {
         ...countryData,
         risk: Math.round(subRisk * 10) / 10,
-        _subRegion: countryCode === "US" ? `${rawName} (${regionKey})` : rawName,
+        // Tooltip shows region name, not individual state
+        _subRegion: countryCode === "US" ? regionKey : rawName,
       };
     }
-    attachInteractions(layer, subData, rawName, styleAdmin1, feature);
+    // For hover: group tooltip by region, not individual state
+    attachInteractions(layer, subData, countryCode === "US" ? regionKey : rawName, styleAdmin1, feature);
   }
 
   function attachInteractions(layer, data, name, styleFn, feature) {
     layer.on({
       mouseover(e) {
-        e.target.setStyle({ weight: 1.5, color: "#0f172a", fillOpacity: data ? 0.90 : 0.30 });
+        e.target.setStyle({ weight: 2, color: "#0f172a", fillOpacity: data ? 0.90 : 0.30 });
         e.target.bringToFront();
         const html = buildTooltip(data, name, isDelta);
         layer.bindTooltip(html, {
