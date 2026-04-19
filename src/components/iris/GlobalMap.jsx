@@ -242,15 +242,15 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
   const map = useMap();
   const countryLayerRef = useRef(null);
   const admin1LayerRef = useRef(null);
+  const regionBorderLayerRef = useRef(null);
 
   const OUTLINE = { color: "#111827", weight: 0.5, opacity: 0.65 };
-  // No border between states in the same region
-  const OUTLINE_INTRA = { color: "#111827", weight: 0, opacity: 0 };
-  // Thick border between different regions
-  const OUTLINE_INTER = { color: "#111827", weight: 1.8, opacity: 0.75 };
+  // No visible border on individual US state polygons
+  const OUTLINE_STATE = { color: "#111827", weight: 0, opacity: 0, stroke: false };
+  // Thin region-divider border (drawn on top as separate layer)
+  const OUTLINE_REGION = { color: "#374151", weight: 0.8, opacity: 0.55 };
 
   function getUsRegionKey(rawName) {
-    // Alaska and Hawaii are their own territories
     if (rawName === "Alaska") return "Alaska";
     if (rawName === "Hawaii") return "Hawaii";
     return US_STATE_TO_REGION[rawName] || "Other";
@@ -267,11 +267,12 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     return { fillColor, fillOpacity, ...OUTLINE };
   }
 
+  // Style for US state fill — zero border weight so states are seamless within a region
   function styleAdmin1(feature) {
     const countryCode = resolveAdmin1Code(feature.properties);
-    if (!countryCode) return { fillOpacity: 0, ...OUTLINE_INTRA };
+    if (!countryCode) return { fillOpacity: 0, stroke: false, weight: 0 };
     const countryData = riskMap[countryCode];
-    if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_INTRA };
+    if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, stroke: false, weight: 0 };
 
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
@@ -284,9 +285,25 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     } else {
       fillColor = riskToColor(subRisk);
     }
-    // Use thick border style — Leaflet can't easily do per-neighbor borders,
-    // but we use a visible weight so region blocks stand out from each other.
-    return { fillColor, fillOpacity: 0.72, ...OUTLINE_INTER };
+    // No stroke on state polygons — region borders are drawn by regionBorderLayer
+    return { fillColor, fillOpacity: 0.78, stroke: false, weight: 0 };
+  }
+
+  // Style for region-border overlay — only draws the outline, no fill
+  function styleRegionBorder(feature) {
+    return { fillOpacity: 0, fill: false, ...OUTLINE_REGION };
+  }
+
+  function getRegionData(countryCode, countryData, rawName) {
+    if (!countryData) return null;
+    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
+    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
+    const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
+    return {
+      ...countryData,
+      risk: Math.round(subRisk * 10) / 10,
+      _subRegion: countryCode === "US" ? regionKey : rawName,
+    };
   }
 
   function onEachCountry(feature, layer) {
@@ -303,24 +320,17 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
     const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
-    let subData = null;
-    if (countryData) {
-      const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
-      subData = {
-        ...countryData,
-        risk: Math.round(subRisk * 10) / 10,
-        // Tooltip shows region name, not individual state
-        _subRegion: countryCode === "US" ? regionKey : rawName,
-      };
-    }
-    // For hover: group tooltip by region, not individual state
-    attachInteractions(layer, subData, countryCode === "US" ? regionKey : rawName, styleAdmin1, feature);
+    const subData = getRegionData(countryCode, countryData, rawName);
+    // Tooltip label: show region name for US, state name for others
+    const tooltipLabel = countryCode === "US" ? regionKey : rawName;
+    attachInteractions(layer, subData, tooltipLabel, styleAdmin1, feature);
   }
 
   function attachInteractions(layer, data, name, styleFn, feature) {
     layer.on({
       mouseover(e) {
-        e.target.setStyle({ weight: 2, color: "#0f172a", fillOpacity: data ? 0.90 : 0.30 });
+        // For US states: highlight fill only, no border flash
+        e.target.setStyle({ fillOpacity: data ? 0.95 : 0.30 });
         e.target.bringToFront();
         const html = buildTooltip(data, name, isDelta);
         layer.bindTooltip(html, {
@@ -349,12 +359,35 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
 
   useEffect(() => {
     if (!admin1Geo || !map) return;
+
+    // Remove old layers
     if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current);
-    const layer = L.geoJSON(admin1Geo, { style: styleAdmin1, onEachFeature: onEachAdmin1 });
-    layer.addTo(map);
-    admin1LayerRef.current = layer;
+    if (regionBorderLayerRef.current) map.removeLayer(regionBorderLayerRef.current);
+
+    // Layer 1: filled state polygons, no stroke
+    const fillLayer = L.geoJSON(admin1Geo, { style: styleAdmin1, onEachFeature: onEachAdmin1 });
+    fillLayer.addTo(map);
+    admin1LayerRef.current = fillLayer;
+
+    // Layer 2: thin region-border outlines on top (stroke only, no fill)
+    // We only show outlines for US features — other countries are handled by countryLayer
+    const usFeatures = {
+      type: "FeatureCollection",
+      features: admin1Geo.features.filter(f => {
+        const a3 = f.properties?.adm0_a3 || f.properties?.ADM0_A3 || "";
+        return a3 === "USA";
+      }),
+    };
+    const regionBorderLayer = L.geoJSON(usFeatures, { style: styleRegionBorder });
+    regionBorderLayer.addTo(map);
+    regionBorderLayerRef.current = regionBorderLayer;
+
     if (countryLayerRef.current) countryLayerRef.current.setStyle(styleCountry);
-    return () => { if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current); };
+
+    return () => {
+      if (admin1LayerRef.current) map.removeLayer(admin1LayerRef.current);
+      if (regionBorderLayerRef.current) map.removeLayer(regionBorderLayerRef.current);
+    };
   }, [admin1Geo, riskMap, isDelta, selectedCode, year]);
 
   return null;
