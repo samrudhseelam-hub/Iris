@@ -30,12 +30,12 @@ export default function Dashboard() {
   const [diseaseFilter, setDiseaseFilter] = useState(null);
   const [selectedCountry, setSelectedCountry] = useState(null);
 
-  const countryRisks     = useMemo(() => getCountryMaxRisk(year, diseaseFilter), [year, diseaseFilter]);
-  const topRiskCountries = useMemo(() => getTopRiskCountries(year, diseaseFilter, 10), [year, diseaseFilter]);
-  const fastGrowing      = useMemo(() => getFastestGrowingOutbreaks(year, 8), [year]);
-  const globalRisk       = useMemo(() => getGlobalRiskScore(year, diseaseFilter), [year, diseaseFilter]);
-  const previousRisk     = useMemo(() => getGlobalRiskScore(year - 1, diseaseFilter), [year, diseaseFilter]);
-  const diseaseAggregates= useMemo(() => getDiseaseAggregates(year), [year]);
+  const countryRisks     = useMemo(() => getCountryMaxRisk(year, diseaseFilter, quarter), [year, diseaseFilter, quarter]);
+  const topRiskCountries = useMemo(() => getTopRiskCountries(year, diseaseFilter, 10, quarter), [year, diseaseFilter, quarter]);
+  const fastGrowing      = useMemo(() => getFastestGrowingOutbreaks(year, 8, quarter), [year, quarter]);
+  const globalRisk       = useMemo(() => getGlobalRiskScore(year, diseaseFilter, quarter), [year, diseaseFilter, quarter]);
+  const previousRisk     = useMemo(() => getGlobalRiskScore(year - 1, diseaseFilter, quarter), [year, diseaseFilter, quarter]);
+  const diseaseAggregates= useMemo(() => getDiseaseAggregates(year, quarter), [year, quarter]);
 
   const handleExport = () => {
     const csv = [

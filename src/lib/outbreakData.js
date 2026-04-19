@@ -405,15 +405,15 @@ function getClimateScore(region, tropical, year) {
 function getLaggedIncidence(country, disease, year) {
   // Baseline incidence from geographic prior
   const geoBase = disease.regionPriors[country.region] ?? 0.05;
-  // Time drift: global trend over years
+  // Time drift: global trend over years (compounded)
   const drift = disease.trendDirection * (year - 2020);
-  // Lag-1 autocorrelation: introduce realistic year-to-year persistence
-  const rng1 = seededRandom(hash(`${country.code}-${disease.name}-${year - 1}`));
-  const rng2 = seededRandom(hash(`${country.code}-${disease.name}-${year - 2}`));
-  const rng3 = seededRandom(hash(`${country.code}-${disease.name}-${year - 3}`));
-  // Weighted average of past noise (lag 1 = 50%, lag 2 = 30%, lag 3 = 20%)
-  const pastNoise = 0.50 * (rng1() - 0.5) + 0.30 * (rng2() - 0.5) + 0.20 * (rng3() - 0.5);
-  const incidence = geoBase + drift + pastNoise * 0.08;
+  // Year-specific noise — seeded by year so each year is different
+  const rng1 = seededRandom(hash(`${country.code}-${disease.name}-yr-${year}`));
+  const rng2 = seededRandom(hash(`${country.code}-${disease.name}-yr-${year - 1}`));
+  const rng3 = seededRandom(hash(`${country.code}-${disease.name}-yr-${year - 2}`));
+  // Weighted average with meaningful amplitude
+  const yearNoise = 0.50 * (rng1() - 0.5) + 0.30 * (rng2() - 0.5) + 0.20 * (rng3() - 0.5);
+  const incidence = geoBase + drift + yearNoise * 0.22;
   return Math.max(0.01, incidence);
 }
 
@@ -469,9 +469,9 @@ function predict(country, disease, year) {
     f_hdi         * 0.05 +
     f_urban       * 0.02;
 
-  // Small stable Gaussian noise per (country, disease) — not per year — for realistic spread
-  const stableRng = seededRandom(hash(`stable2-${country.code}-${disease.name}`));
-  const stableNoise = (stableRng() - 0.5) * 0.03;
+  // Year-specific noise so scores differ meaningfully across years
+  const stableRng = seededRandom(hash(`stable2-${country.code}-${disease.name}-${year}`));
+  const stableNoise = (stableRng() - 0.5) * 0.06;
 
   const raw = Math.max(0.015, Math.min(0.92, score + stableNoise));
   const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_urban };
@@ -530,7 +530,23 @@ function estimateCases(country, disease, risk) {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export function getAllPredictions(year, diseaseFilter = null) {
+// Seasonal multiplier: diseases peak in certain quarters
+function getSeasonalMultiplier(disease, quarter) {
+  if (!disease.seasonalPeak || disease.seasonalPeak.length === 0) return 1.0;
+  // Map quarter to representative month (midpoint)
+  const quarterMonth = { 1: 2, 2: 5, 3: 8, 4: 11 }[quarter] || 2;
+  const [peakStart, peakEnd] = disease.seasonalPeak;
+  // Check if quarter month is within peak window (handle wrap-around e.g. Dec-Feb)
+  let inPeak;
+  if (peakStart <= peakEnd) {
+    inPeak = quarterMonth >= peakStart && quarterMonth <= peakEnd;
+  } else {
+    inPeak = quarterMonth >= peakStart || quarterMonth <= peakEnd;
+  }
+  return inPeak ? 1.18 : 0.88;
+}
+
+export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
   const diseases = diseaseFilter
     ? DISEASE_LIST.filter(d => d.name === diseaseFilter)
     : DISEASE_LIST;
@@ -538,6 +554,8 @@ export function getAllPredictions(year, diseaseFilter = null) {
   return COUNTRIES.flatMap(country =>
     diseases.map(disease => {
       const { raw } = predict(country, disease, year);
+      const seasonal = getSeasonalMultiplier(disease, quarter);
+      const adjustedRaw = Math.max(0.015, Math.min(0.95, raw * seasonal));
       const confidence = getConfidence(country, disease);
       const trend = getTrendDirection(country, disease, year);
       const yoyGrowth = getYoYGrowth(country, disease, year);
@@ -552,9 +570,9 @@ export function getAllPredictions(year, diseaseFilter = null) {
         region: country.region,
         disease: disease.name,
         diseaseType: disease.type,
-        risk: Math.round(raw * 1000) / 10,
+        risk: Math.round(adjustedRaw * 1000) / 10,
         confidence: Math.round(confidence * 100),
-        estimatedCases: estimateCases(country, disease, raw),
+        estimatedCases: estimateCases(country, disease, adjustedRaw),
         trend,
         yoyGrowth,
         featureImportance,
@@ -564,8 +582,8 @@ export function getAllPredictions(year, diseaseFilter = null) {
   );
 }
 
-export function getCountryMaxRisk(year, diseaseFilter = null) {
-  const predictions = getAllPredictions(year, diseaseFilter);
+export function getCountryMaxRisk(year, diseaseFilter = null, quarter = 2) {
+  const predictions = getAllPredictions(year, diseaseFilter, quarter);
   const map = {};
   for (const p of predictions) {
     if (!map[p.countryCode] || p.risk > map[p.countryCode].risk) {
@@ -575,28 +593,28 @@ export function getCountryMaxRisk(year, diseaseFilter = null) {
   return Object.values(map);
 }
 
-export function getTopRiskCountries(year, diseaseFilter = null, limit = 10) {
-  return getCountryMaxRisk(year, diseaseFilter)
+export function getTopRiskCountries(year, diseaseFilter = null, limit = 10, quarter = 2) {
+  return getCountryMaxRisk(year, diseaseFilter, quarter)
     .sort((a, b) => b.risk - a.risk)
     .slice(0, limit);
 }
 
-export function getFastestGrowingOutbreaks(year, limit = 10) {
-  return getAllPredictions(year)
+export function getFastestGrowingOutbreaks(year, limit = 10, quarter = 2) {
+  return getAllPredictions(year, null, quarter)
     .filter(p => p.yoyGrowth > 0)
     .sort((a, b) => b.yoyGrowth - a.yoyGrowth)
     .slice(0, limit);
 }
 
-export function getGlobalRiskScore(year, diseaseFilter = null) {
-  const risks = getCountryMaxRisk(year, diseaseFilter);
+export function getGlobalRiskScore(year, diseaseFilter = null, quarter = 2) {
+  const risks = getCountryMaxRisk(year, diseaseFilter, quarter);
   const totalPop = risks.reduce((s, c) => s + c.population, 0);
   const weighted = risks.reduce((s, c) => s + c.risk * c.population, 0);
   return Math.round(weighted / totalPop * 10) / 10;
 }
 
-export function getDiseaseAggregates(year) {
-  const predictions = getAllPredictions(year);
+export function getDiseaseAggregates(year, quarter = 2) {
+  const predictions = getAllPredictions(year, null, quarter);
   const map = {};
   for (const p of predictions) {
     if (!map[p.disease]) {
