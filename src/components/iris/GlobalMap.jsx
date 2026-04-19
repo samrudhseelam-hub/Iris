@@ -154,6 +154,42 @@ const COUNTRY_MACRO_REGION = {
   AU:"Oceania",NZ:"Oceania",PG:"Oceania",
 };
 
+// Russia oblasts → broad risk regions
+const RU_OBLAST_TO_REGION = {
+  // Western Russia / European Russia
+  "Moscow":"Russia West","Leningrad":"Russia West","Saint Petersburg":"Russia West",
+  "Novgorod":"Russia West","Pskov":"Russia West","Tver'":"Russia West","Yaroslavl'":"Russia West",
+  "Vladimir":"Russia West","Ivanovo":"Russia West","Kostroma":"Russia West","Ryazan'":"Russia West",
+  "Tula":"Russia West","Kaluga":"Russia West","Smolensk":"Russia West","Bryansk":"Russia West",
+  "Oryol":"Russia West","Kursk":"Russia West","Belgorod":"Russia West","Voronezh":"Russia West",
+  "Lipetsk":"Russia West","Tambov":"Russia West","Penza":"Russia West","Mordoviya":"Russia West",
+  "Chuvashiya":"Russia West","Mari-El":"Russia West","Tatarstan":"Russia West",
+  "Ul'yanovsk":"Russia West","Nizhegorod":"Russia West","Kirov":"Russia West",
+  "Arkhangel'sk":"Russia West","Vologda":"Russia West","Murmansk":"Russia West",
+  "Karelia":"Russia West","Komi":"Russia West","Nenets":"Russia West",
+  "Kaliningrad":"Russia West","Pskov":"Russia West",
+  // South / North Caucasus
+  "Krasnodar":"Russia South","Stavropol'":"Russia South","Rostov":"Russia South",
+  "Astrakhan'":"Russia South","Volgograd":"Russia South","Saratov":"Russia South",
+  "Kalmykiya":"Russia South","Adygeya":"Russia South","Karachayevo-Cherkessiya":"Russia South",
+  "Kabardino-Balkariya":"Russia South","North Ossetia":"Russia South","Ingushetiya":"Russia South",
+  "Chechnya":"Russia South","Dagestan":"Russia South",
+  // Ural
+  "Chelyabinsk":"Russia Ural","Sverdlovsk":"Russia Ural","Tyumen'":"Russia Ural",
+  "Kurgan":"Russia Ural","Perm'":"Russia Ural","Bashkortostan":"Russia Ural",
+  "Orenburg":"Russia Ural","Samara":"Russia Ural","Udmurtiya":"Russia Ural",
+  "Khanty-Mansiy":"Russia Ural","Yamalo-Nenets":"Russia Ural",
+  // Siberia
+  "Omsk":"Russia Siberia","Novosibirsk":"Russia Siberia","Tomsk":"Russia Siberia",
+  "Kemerovo":"Russia Siberia","Altay":"Russia Siberia","Altayskiy":"Russia Siberia",
+  "Krasnoyarsk":"Russia Siberia","Khakasiya":"Russia Siberia","Tuva":"Russia Siberia",
+  "Irkutsk":"Russia Siberia","Buryatiya":"Russia Siberia","Zabaykal'ye":"Russia Siberia",
+  // Far East
+  "Sakha":"Russia Far East","Amur":"Russia Far East","Khabarovsk":"Russia Far East",
+  "Primorskiy":"Russia Far East","Sakhalin":"Russia Far East","Kamchatka":"Russia Far East",
+  "Magadan":"Russia Far East","Chukotka":"Russia Far East","Yevreyskaya":"Russia Far East",
+};
+
 // US states → broad risk regions
 const US_STATE_TO_REGION = {
   "Maine":"Northeast","New Hampshire":"Northeast","Vermont":"Northeast","Massachusetts":"Northeast",
@@ -207,7 +243,7 @@ function buildTooltip(data, regionName, isDelta) {
   return `<div style="font:12px Inter,sans-serif;min-width:205px">
     <b style="font-size:13px;display:block;margin-bottom:2px">${isSubRegion ? data._subRegion : data.country}</b>
     ${isSubRegion
-      ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.country} · ${data.region}</div>`
+      ? `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.region}</div>`
       : `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;border-bottom:1px solid #f1f5f9;padding-bottom:4px">${data.region}</div>`}
     <table style="width:100%;border-spacing:0 3px;font-size:11px">
       <tr>
@@ -256,6 +292,13 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     return US_STATE_TO_REGION[rawName] || "Other";
   }
 
+  function getRuRegionKey(rawName) {
+    return RU_OBLAST_TO_REGION[rawName] || "Russia West";
+  }
+
+  // Countries that get sub-divided into named regions via admin1
+  const SUBDIVIDED = new Set(["US", "RU"]);
+
   function styleCountry(feature) {
     const code = resolveCountryCode(feature.properties);
     const data = code ? riskMap[code] : null;
@@ -267,7 +310,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     return { fillColor, fillOpacity, ...OUTLINE };
   }
 
-  // Style for US state fill — zero border weight so states are seamless within a region
+  // Style for admin1 fill — zero border weight so subdivisions are seamless within a region
   function styleAdmin1(feature) {
     const countryCode = resolveAdmin1Code(feature.properties);
     if (!countryCode) return { fillOpacity: 0, stroke: false, weight: 0 };
@@ -275,8 +318,7 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, stroke: false, weight: 0 };
 
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
-    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
+    const regionKey = getSubdivisionRegionKey(countryCode, rawName);
     const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
     let fillColor;
     if (isDelta && countryData.delta !== undefined) {
@@ -285,7 +327,6 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     } else {
       fillColor = riskToColor(subRisk);
     }
-    // No stroke on state polygons — region borders are drawn by regionBorderLayer
     return { fillColor, fillOpacity: 0.78, stroke: false, weight: 0 };
   }
 
@@ -294,15 +335,20 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     return { fillOpacity: 0, fill: false, ...OUTLINE_REGION };
   }
 
+  function getSubdivisionRegionKey(countryCode, rawName) {
+    if (countryCode === "US") return getUsRegionKey(rawName);
+    if (countryCode === "RU") return getRuRegionKey(rawName);
+    return COUNTRY_MACRO_REGION[countryCode] || "Other";
+  }
+
   function getRegionData(countryCode, countryData, rawName) {
     if (!countryData) return null;
-    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
+    const regionKey = getSubdivisionRegionKey(countryCode, rawName);
     const subRisk = getSubRegionRisk(countryCode, regionKey, countryData.disease, year, countryData.risk);
     return {
       ...countryData,
       risk: Math.round(subRisk * 10) / 10,
-      _subRegion: countryCode === "US" ? regionKey : rawName,
+      _subRegion: regionKey, // always show region name, never country name
     };
   }
 
@@ -318,11 +364,10 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     if (!countryCode) return;
     const countryData = riskMap[countryCode];
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
-    const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const regionKey = countryCode === "US" ? getUsRegionKey(rawName) : macroRegion;
+    const regionKey = getSubdivisionRegionKey(countryCode, rawName);
     const subData = getRegionData(countryCode, countryData, rawName);
-    // Tooltip label: show region name for US, state name for others
-    const tooltipLabel = countryCode === "US" ? regionKey : rawName;
+    // Always show region key as tooltip label for subdivided countries
+    const tooltipLabel = SUBDIVIDED.has(countryCode) ? regionKey : rawName;
     attachInteractions(layer, subData, tooltipLabel, styleAdmin1, feature);
   }
 
@@ -370,12 +415,12 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     admin1LayerRef.current = fillLayer;
 
     // Layer 2: thin region-border outlines on top (stroke only, no fill)
-    // We only show outlines for US features — other countries are handled by countryLayer
+    // Show outlines for US and Russia — other countries handled by countryLayer
     const usFeatures = {
       type: "FeatureCollection",
       features: admin1Geo.features.filter(f => {
         const a3 = f.properties?.adm0_a3 || f.properties?.ADM0_A3 || "";
-        return a3 === "USA";
+        return a3 === "USA" || a3 === "RUS";
       }),
     };
     const regionBorderLayer = L.geoJSON(usFeatures, { style: styleRegionBorder });
