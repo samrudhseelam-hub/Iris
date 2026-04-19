@@ -176,6 +176,7 @@ export default function ComparisonView() {
             Risk Delta Map &mdash; {yearA} → {yearB} {diseaseFilter ? `(${diseaseFilter})` : "(All Diseases)"}
           </h2>
           <GlobalMap
+            key={`delta-${yearA}-${yearB}-${diseaseFilter}`}
             predictions={deltaPredictions}
             isDelta
           />
@@ -189,7 +190,7 @@ export default function ComparisonView() {
               <h3 className="text-sm font-semibold text-foreground">Scenario A — {yearA}</h3>
               <span className="text-xs text-muted-foreground">Global Risk: {globalA}%</span>
             </div>
-            <GlobalMap predictions={risksA} />
+            <GlobalMap key={`a-${yearA}-${diseaseFilter}`} predictions={risksA} />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -197,7 +198,7 @@ export default function ComparisonView() {
               <h3 className="text-sm font-semibold text-foreground">Scenario B — {yearB}</h3>
               <span className="text-xs text-muted-foreground">Global Risk: {globalB}%</span>
             </div>
-            <GlobalMap predictions={risksB} />
+            <GlobalMap key={`b-${yearB}-${diseaseFilter}`} predictions={risksB} />
           </div>
         </div>
 
