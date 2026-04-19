@@ -263,10 +263,8 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const countryData = riskMap[countryCode];
     if (!countryData) return { fillColor: "#d1d5db", fillOpacity: 0.15, ...OUTLINE_SUB };
 
-    const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
-    const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
+    const subRisk = getSubRegionRisk(countryCode, macroRegion, countryData.disease, year, countryData.risk);
     let fillColor;
     if (isDelta && countryData.delta !== undefined) {
       const subDelta = countryData.delta * (0.6 + (subRisk / countryData.risk) * 0.4);
@@ -290,14 +288,13 @@ function MapLayers({ countryGeo, admin1Geo, riskMap, isDelta, onCountrySelect, s
     const countryData = riskMap[countryCode];
     const rawName = feature.properties?.name || feature.properties?.NAME || "";
     const macroRegion = COUNTRY_MACRO_REGION[countryCode] || "Other";
-    const subName = countryCode === "US" ? (US_STATE_TO_REGION[rawName] || "Other") : macroRegion;
     let subData = null;
     if (countryData) {
-      const subRisk = getSubRegionRisk(countryCode, subName, countryData.disease, year, countryData.risk);
+      const subRisk = getSubRegionRisk(countryCode, macroRegion, countryData.disease, year, countryData.risk);
       subData = {
         ...countryData,
         risk: Math.round(subRisk * 10) / 10,
-        _subRegion: countryCode === "US" ? `${rawName} (${subName})` : rawName,
+        _subRegion: rawName,
       };
     }
     attachInteractions(layer, subData, rawName, styleAdmin1, feature);
