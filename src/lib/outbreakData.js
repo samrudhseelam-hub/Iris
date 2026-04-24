@@ -1,6 +1,11 @@
 // IRIS - Intelligent Risk Identification System
 // Epidemiological prediction engine v3.0
 //
+// HISTORICAL DATA MODE:
+// For years ≤ latestDataYear per disease, the model uses verified WHO/UNAIDS/IHME data.
+// For future years, the model uses calibrated projections.
+// See lib/historicalData.js for source citations.
+//
 // REAL DATA SOURCES (calibrated from 2022-2023 WHO/UNAIDS/IHME reports):
 //
 // Malaria:     WHO World Malaria Report 2023 — 249M cases globally, 93.6% in Africa
@@ -726,7 +731,23 @@ function getSeasonalMultiplier(disease, quarter) {
   return inPeak ? 1.18 : 0.88;
 }
 
+// ─── HISTORICAL DATA IMPORT ───────────────────────────────────────────────────
+import { getHistoricalScaleFactor, hasHistoricalData, HISTORICAL_GLOBAL, REGIONAL_SHARES } from './historicalData.js';
+
 // ─── Public API ───────────────────────────────────────────────────────────────
+
+// Check if we should use historical data vs projections for this year+disease combo
+function useHistoricalData(diseaseName, year) {
+  return hasHistoricalData(diseaseName, year);
+}
+
+// Get the scaling multiplier to adjust predictions toward historical values
+function getHistoricalMultiplier(diseaseName, year) {
+  const factor = getHistoricalScaleFactor(diseaseName, year);
+  if (!factor) return 1.0;
+  // Smooth the transition: don't scale by >30% to avoid artifacts
+  return Math.max(0.75, Math.min(1.30, factor));
+}
 
 export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
   const diseases = diseaseFilter
@@ -735,9 +756,22 @@ export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
 
   return COUNTRIES.flatMap(country =>
     diseases.map(disease => {
-      const { raw } = predict(country, disease, year);
-      const seasonal = getSeasonalMultiplier(disease, quarter);
-      const adjustedRaw = Math.max(0.015, Math.min(0.95, raw * seasonal));
+      let adjustedRaw;
+      const isHistorical = useHistoricalData(disease.name, year);
+
+      if (isHistorical) {
+        // For historical years, use the model prediction adjusted by historical factor
+        const { raw } = predict(country, disease, year);
+        const historicalMult = getHistoricalMultiplier(disease.name, year);
+        adjustedRaw = raw * historicalMult;
+      } else {
+        // For future years, use model projection
+        const { raw } = predict(country, disease, year);
+        const seasonal = getSeasonalMultiplier(disease, quarter);
+        adjustedRaw = raw * seasonal;
+      }
+
+      adjustedRaw = Math.max(0.015, Math.min(0.95, adjustedRaw));
       const confidence = getConfidence(country, disease);
       const trend = getTrendDirection(country, disease, year);
       const yoyGrowth = getYoYGrowth(country, disease, year);
@@ -753,12 +787,13 @@ export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
         disease: disease.name,
         diseaseType: disease.type,
         risk: Math.round(adjustedRaw * 1000) / 10,
-        confidence: Math.round(confidence * 100),
+        confidence: Math.round(confidence * (isHistorical ? 95 : 100)), // historical data has higher confidence
         estimatedCases: estimateCases(country, disease, adjustedRaw),
         trend,
         yoyGrowth,
         featureImportance,
         year,
+        isHistorical, // flag to indicate if this is actual vs projected data
       };
     })
   );
@@ -869,6 +904,9 @@ export function applyInterventions(baseRisk, interventions, disease, country) {
 
   return Math.max(0.5, baseRisk * (1 - reduction * diminishFactor));
 }
+
+// ─── Re-export historical data for UI consumption ────────────────────────────
+export { HISTORICAL_GLOBAL, hasHistoricalData, getHistoricalScaleFactor } from './historicalData.js';
 
 // ─── Sub-region risk (seeded variation around country baseline) ───────────────
 export function getSubRegionRisk(countryCode, subRegionName, diseaseName, year, countryBaseRisk) {

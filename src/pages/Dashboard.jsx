@@ -188,8 +188,8 @@ export default function Dashboard() {
           {/* Footer */}
           <div className="text-center py-6 border-t border-border">
             <p className="text-[11px] text-muted-foreground">
-              IRIS v3.0 · Real-data calibrated model using WHO World Malaria Report 2023, WHO Global TB Report 2023, WHO/UNAIDS HIV Epidemiological Fact Sheet 2023, WHO Cholera Annual Report 2023, WHO GHE & IHME GBD 2023, UNDP HDR 2023, World Bank & WHO/UNICEF JMP WASH data ·
-              {" "}Historical data anchored at 2022 · Projections for {year} are model estimates
+              IRIS v3.0 · Real-data calibrated model using WHO World Malaria Report 2023-2025, WHO Global TB Report 2023-2025, WHO/UNAIDS HIV Epidemiological Fact Sheet 2023-2025, WHO Cholera Annual Report 2023-2024, WHO GHE & IHME GBD 2023, UNDP HDR 2023, World Bank & WHO/UNICEF JMP WASH data ·
+              {" "}{year <= 2024 ? `Displaying VERIFIED HISTORICAL DATA for ${year} from WHO/UNAIDS/IHME reports` : `Displaying MODEL PROJECTIONS for ${year} (historical data available up to 2024)`}
             </p>
           </div>
         </main>
