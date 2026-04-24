@@ -188,8 +188,8 @@ export default function Dashboard() {
           {/* Footer */}
           <div className="text-center py-6 border-t border-border">
             <p className="text-[11px] text-muted-foreground">
-              IRIS v2.0 · Per-disease calibrated epidemiological model with lag-adjusted time-series features ·
-              {" "}All projections are research-grade estimates for {year} · Data source: WHO/IHME/World Bank proxies
+              IRIS v3.0 · Real-data calibrated model using WHO World Malaria Report 2023, WHO Global TB Report 2023, WHO/UNAIDS HIV Epidemiological Fact Sheet 2023, WHO Cholera Annual Report 2023, WHO GHE & IHME GBD 2023, UNDP HDR 2023, World Bank & WHO/UNICEF JMP WASH data ·
+              {" "}Historical data anchored at 2022 · Projections for {year} are model estimates
             </p>
           </div>
         </main>
