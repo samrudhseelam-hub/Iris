@@ -462,104 +462,109 @@ export const DISEASE_LIST = DISEASES.filter((d, i, arr) => d.type && arr.findInd
 // waterSanitationIndex: WHO/UNICEF JMP 2023 (safely managed water + sanitation)
 // vaccineCoverage: WHO immunization coverage estimates 2022 (DTP3 proxy)
 // urbanization: World Bank 2022
+// conflictIndex: 0=peaceful, 1=active major conflict — sourced from ACLED/UCDP 2023
+//   Conflict degrades health systems, displaces populations, disrupts vaccination → major outbreak amplifier
+// malnutritionRate: UNICEF/WHO stunting+wasting proxy (0–1) — amplifies infectious disease severity
+// displacementIndex: UNHCR IDP+refugee pressure (0–1) — drives cholera, measles, TB in camps
 export const COUNTRIES = [
-  { name: "Nigeria", code: "NG", lat: 9.08, lng: 7.49, population: 223800000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.548, healthIndex: 0.38, waterSanitationIndex: 0.32, vaccineCoverage: 0.57, urbanization: 0.54 },
-  { name: "India", code: "IN", lat: 20.59, lng: 78.96, population: 1428600000, region: "South Asia", tropical: true, hdi: 0.644, healthIndex: 0.53, waterSanitationIndex: 0.58, vaccineCoverage: 0.91, urbanization: 0.36 },
-  { name: "Brazil", code: "BR", lat: -14.24, lng: -51.93, population: 216400000, region: "Latin America", tropical: true, hdi: 0.760, healthIndex: 0.66, waterSanitationIndex: 0.74, vaccineCoverage: 0.79, urbanization: 0.88 },
-  { name: "USA", code: "US", lat: 37.09, lng: -95.71, population: 339900000, region: "North America", tropical: false, hdi: 0.927, healthIndex: 0.88, waterSanitationIndex: 0.99, vaccineCoverage: 0.93, urbanization: 0.83 },
-  { name: "China", code: "CN", lat: 35.86, lng: 104.20, population: 1425700000, region: "East Asia", tropical: false, hdi: 0.788, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.65 },
-  { name: "Indonesia", code: "ID", lat: -0.79, lng: 113.92, population: 277500000, region: "Southeast Asia", tropical: true, hdi: 0.713, healthIndex: 0.56, waterSanitationIndex: 0.62, vaccineCoverage: 0.80, urbanization: 0.58 },
-  { name: "Pakistan", code: "PK", lat: 30.38, lng: 69.35, population: 240500000, region: "South Asia", tropical: true, hdi: 0.540, healthIndex: 0.40, waterSanitationIndex: 0.42, vaccineCoverage: 0.85, urbanization: 0.37 },
-  { name: "Bangladesh", code: "BD", lat: 23.68, lng: 90.36, population: 172200000, region: "South Asia", tropical: true, hdi: 0.670, healthIndex: 0.44, waterSanitationIndex: 0.48, vaccineCoverage: 0.97, urbanization: 0.40 },
-  { name: "Russia", code: "RU", lat: 61.52, lng: 105.32, population: 144200000, region: "Europe", tropical: false, hdi: 0.821, healthIndex: 0.68, waterSanitationIndex: 0.90, vaccineCoverage: 0.97, urbanization: 0.75 },
-  { name: "Mexico", code: "MX", lat: 23.63, lng: -102.55, population: 128900000, region: "Latin America", tropical: true, hdi: 0.770, healthIndex: 0.64, waterSanitationIndex: 0.76, vaccineCoverage: 0.88, urbanization: 0.81 },
-  { name: "Japan", code: "JP", lat: 36.20, lng: 138.25, population: 123300000, region: "East Asia", tropical: false, hdi: 0.920, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.99, urbanization: 0.92 },
-  { name: "Ethiopia", code: "ET", lat: 9.15, lng: 40.49, population: 126500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.492, healthIndex: 0.30, waterSanitationIndex: 0.20, vaccineCoverage: 0.72, urbanization: 0.22 },
-  { name: "Philippines", code: "PH", lat: 12.88, lng: 121.77, population: 117300000, region: "Southeast Asia", tropical: true, hdi: 0.710, healthIndex: 0.54, waterSanitationIndex: 0.60, vaccineCoverage: 0.80, urbanization: 0.48 },
-  { name: "Egypt", code: "EG", lat: 26.82, lng: 30.80, population: 112700000, region: "North Africa", tropical: false, hdi: 0.728, healthIndex: 0.56, waterSanitationIndex: 0.64, vaccineCoverage: 0.94, urbanization: 0.43 },
-  { name: "DR Congo", code: "CD", lat: -4.04, lng: 21.76, population: 102300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.481, healthIndex: 0.22, waterSanitationIndex: 0.15, vaccineCoverage: 0.57, urbanization: 0.47 },
-  { name: "Germany", code: "DE", lat: 51.17, lng: 10.45, population: 84400000, region: "Europe", tropical: false, hdi: 0.950, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.77 },
-  { name: "UK", code: "GB", lat: 55.38, lng: -3.44, population: 67700000, region: "Europe", tropical: false, hdi: 0.940, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.84 },
-  { name: "France", code: "FR", lat: 46.23, lng: 2.21, population: 68300000, region: "Europe", tropical: false, hdi: 0.910, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.82 },
-  { name: "Thailand", code: "TH", lat: 15.87, lng: 100.99, population: 71800000, region: "Southeast Asia", tropical: true, hdi: 0.803, healthIndex: 0.70, waterSanitationIndex: 0.80, vaccineCoverage: 0.96, urbanization: 0.52 },
-  { name: "Tanzania", code: "TZ", lat: -6.37, lng: 34.89, population: 65500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.532, healthIndex: 0.32, waterSanitationIndex: 0.25, vaccineCoverage: 0.94, urbanization: 0.38 },
-  { name: "South Africa", code: "ZA", lat: -30.56, lng: 22.94, population: 60400000, region: "Sub-Saharan Africa", tropical: false, hdi: 0.717, healthIndex: 0.52, waterSanitationIndex: 0.70, vaccineCoverage: 0.76, urbanization: 0.68 },
-  { name: "Kenya", code: "KE", lat: -0.02, lng: 37.91, population: 55100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.601, healthIndex: 0.40, waterSanitationIndex: 0.35, vaccineCoverage: 0.88, urbanization: 0.29 },
-  { name: "Colombia", code: "CO", lat: 4.57, lng: -74.30, population: 52100000, region: "Latin America", tropical: true, hdi: 0.758, healthIndex: 0.62, waterSanitationIndex: 0.74, vaccineCoverage: 0.90, urbanization: 0.82 },
-  { name: "Italy", code: "IT", lat: 41.87, lng: 12.57, population: 58900000, region: "Europe", tropical: false, hdi: 0.906, healthIndex: 0.90, waterSanitationIndex: 0.99, vaccineCoverage: 0.94, urbanization: 0.72 },
-  { name: "Myanmar", code: "MM", lat: 21.91, lng: 95.96, population: 54400000, region: "Southeast Asia", tropical: true, hdi: 0.585, healthIndex: 0.36, waterSanitationIndex: 0.40, vaccineCoverage: 0.78, urbanization: 0.32 },
-  { name: "South Korea", code: "KR", lat: 35.91, lng: 127.77, population: 51780000, region: "East Asia", tropical: false, hdi: 0.929, healthIndex: 0.93, waterSanitationIndex: 1.00, vaccineCoverage: 0.99, urbanization: 0.81 },
-  { name: "Sudan", code: "SD", lat: 12.86, lng: 30.22, population: 48100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.510, healthIndex: 0.25, waterSanitationIndex: 0.18, vaccineCoverage: 0.55, urbanization: 0.36 },
-  { name: "Uganda", code: "UG", lat: 1.37, lng: 32.29, population: 48600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.550, healthIndex: 0.32, waterSanitationIndex: 0.22, vaccineCoverage: 0.90, urbanization: 0.26 },
-  { name: "Argentina", code: "AR", lat: -38.42, lng: -63.62, population: 46300000, region: "Latin America", tropical: false, hdi: 0.849, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.94, urbanization: 0.92 },
-  { name: "Algeria", code: "DZ", lat: 28.03, lng: 1.66, population: 45600000, region: "North Africa", tropical: false, hdi: 0.745, healthIndex: 0.56, waterSanitationIndex: 0.62, vaccineCoverage: 0.95, urbanization: 0.74 },
-  { name: "Iraq", code: "IQ", lat: 33.22, lng: 43.68, population: 44500000, region: "Middle East", tropical: false, hdi: 0.686, healthIndex: 0.42, waterSanitationIndex: 0.50, vaccineCoverage: 0.72, urbanization: 0.71 },
-  { name: "Afghanistan", code: "AF", lat: 33.94, lng: 67.71, population: 41100000, region: "South Asia", tropical: false, hdi: 0.462, healthIndex: 0.20, waterSanitationIndex: 0.16, vaccineCoverage: 0.68, urbanization: 0.26 },
-  { name: "Canada", code: "CA", lat: 56.13, lng: -106.35, population: 39600000, region: "North America", tropical: false, hdi: 0.935, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.93, urbanization: 0.82 },
-  { name: "Morocco", code: "MA", lat: 31.79, lng: -7.09, population: 37800000, region: "North Africa", tropical: false, hdi: 0.698, healthIndex: 0.54, waterSanitationIndex: 0.60, vaccineCoverage: 0.98, urbanization: 0.64 },
-  { name: "Saudi Arabia", code: "SA", lat: 23.89, lng: 45.08, population: 36900000, region: "Middle East", tropical: false, hdi: 0.875, healthIndex: 0.74, waterSanitationIndex: 0.94, vaccineCoverage: 0.98, urbanization: 0.84 },
-  { name: "Peru", code: "PE", lat: -9.19, lng: -75.02, population: 34000000, region: "Latin America", tropical: true, hdi: 0.762, healthIndex: 0.60, waterSanitationIndex: 0.70, vaccineCoverage: 0.84, urbanization: 0.79 },
-  { name: "Angola", code: "AO", lat: -11.20, lng: 17.87, population: 36000000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.586, healthIndex: 0.30, waterSanitationIndex: 0.22, vaccineCoverage: 0.57, urbanization: 0.68 },
-  { name: "Mozambique", code: "MZ", lat: -18.67, lng: 35.53, population: 33900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.461, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.80, urbanization: 0.38 },
-  { name: "Ghana", code: "GH", lat: 7.95, lng: -1.02, population: 33500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.602, healthIndex: 0.42, waterSanitationIndex: 0.40, vaccineCoverage: 0.92, urbanization: 0.58 },
-  { name: "Yemen", code: "YE", lat: 15.55, lng: 48.52, population: 34400000, region: "Middle East", tropical: false, hdi: 0.455, healthIndex: 0.18, waterSanitationIndex: 0.12, vaccineCoverage: 0.68, urbanization: 0.38 },
-  { name: "Nepal", code: "NP", lat: 28.39, lng: 84.12, population: 30900000, region: "South Asia", tropical: false, hdi: 0.601, healthIndex: 0.42, waterSanitationIndex: 0.44, vaccineCoverage: 0.90, urbanization: 0.22 },
-  { name: "Venezuela", code: "VE", lat: 6.42, lng: -66.59, population: 28400000, region: "Latin America", tropical: true, hdi: 0.691, healthIndex: 0.40, waterSanitationIndex: 0.50, vaccineCoverage: 0.68, urbanization: 0.88 },
-  { name: "Madagascar", code: "MG", lat: -18.77, lng: 46.87, population: 30300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.501, healthIndex: 0.26, waterSanitationIndex: 0.18, vaccineCoverage: 0.64, urbanization: 0.40 },
-  { name: "Australia", code: "AU", lat: -25.27, lng: 133.78, population: 26500000, region: "Oceania", tropical: false, hdi: 0.946, healthIndex: 0.95, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.86 },
-  { name: "Cameroon", code: "CM", lat: 7.37, lng: 12.35, population: 28600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.576, healthIndex: 0.32, waterSanitationIndex: 0.26, vaccineCoverage: 0.83, urbanization: 0.58 },
-  { name: "Niger", code: "NE", lat: 17.61, lng: 8.08, population: 27200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.394, healthIndex: 0.20, waterSanitationIndex: 0.14, vaccineCoverage: 0.75, urbanization: 0.17 },
-  { name: "Sri Lanka", code: "LK", lat: 7.87, lng: 80.77, population: 22200000, region: "South Asia", tropical: true, hdi: 0.782, healthIndex: 0.64, waterSanitationIndex: 0.74, vaccineCoverage: 0.99, urbanization: 0.19 },
-  { name: "Mali", code: "ML", lat: 17.57, lng: -4.00, population: 23300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.428, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.69, urbanization: 0.45 },
-  { name: "Guatemala", code: "GT", lat: 15.78, lng: -90.23, population: 18100000, region: "Latin America", tropical: true, hdi: 0.627, healthIndex: 0.46, waterSanitationIndex: 0.52, vaccineCoverage: 0.85, urbanization: 0.52 },
-  { name: "Senegal", code: "SN", lat: 14.50, lng: -14.45, population: 17900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.511, healthIndex: 0.36, waterSanitationIndex: 0.26, vaccineCoverage: 0.87, urbanization: 0.48 },
-  { name: "Cambodia", code: "KH", lat: 12.57, lng: 104.99, population: 16950000, region: "Southeast Asia", tropical: true, hdi: 0.600, healthIndex: 0.42, waterSanitationIndex: 0.44, vaccineCoverage: 0.91, urbanization: 0.25 },
-  { name: "Chad", code: "TD", lat: 15.45, lng: 18.73, population: 18300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.394, healthIndex: 0.18, waterSanitationIndex: 0.10, vaccineCoverage: 0.48, urbanization: 0.24 },
-  { name: "Somalia", code: "SO", lat: 5.15, lng: 46.20, population: 18100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.380, healthIndex: 0.14, waterSanitationIndex: 0.08, vaccineCoverage: 0.42, urbanization: 0.46 },
-  { name: "Zambia", code: "ZM", lat: -13.13, lng: 27.85, population: 20600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.565, healthIndex: 0.32, waterSanitationIndex: 0.25, vaccineCoverage: 0.91, urbanization: 0.46 },
-  { name: "Zimbabwe", code: "ZW", lat: -19.02, lng: 29.15, population: 16700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.593, healthIndex: 0.36, waterSanitationIndex: 0.28, vaccineCoverage: 0.84, urbanization: 0.32 },
-  { name: "Rwanda", code: "RW", lat: -1.94, lng: 29.87, population: 14100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.548, healthIndex: 0.40, waterSanitationIndex: 0.36, vaccineCoverage: 0.98, urbanization: 0.18 },
-  { name: "Guinea", code: "GN", lat: 9.95, lng: -9.70, population: 14200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.465, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.61, urbanization: 0.38 },
-  { name: "Burkina Faso", code: "BF", lat: 12.24, lng: -1.56, population: 22700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.449, healthIndex: 0.24, waterSanitationIndex: 0.18, vaccineCoverage: 0.88, urbanization: 0.32 },
-  { name: "Malawi", code: "MW", lat: -13.25, lng: 34.30, population: 20900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.508, healthIndex: 0.28, waterSanitationIndex: 0.20, vaccineCoverage: 0.93, urbanization: 0.18 },
-  { name: "Bolivia", code: "BO", lat: -16.29, lng: -63.59, population: 12400000, region: "Latin America", tropical: true, hdi: 0.698, healthIndex: 0.50, waterSanitationIndex: 0.58, vaccineCoverage: 0.88, urbanization: 0.70 },
-  { name: "Haiti", code: "HT", lat: 18.97, lng: -72.29, population: 11700000, region: "Latin America", tropical: true, hdi: 0.535, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.54, urbanization: 0.58 },
-  { name: "Sweden", code: "SE", lat: 60.13, lng: 18.64, population: 10500000, region: "Europe", tropical: false, hdi: 0.952, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.88 },
-  { name: "Portugal", code: "PT", lat: 39.40, lng: -8.22, population: 10300000, region: "Europe", tropical: false, hdi: 0.866, healthIndex: 0.88, waterSanitationIndex: 0.99, vaccineCoverage: 0.97, urbanization: 0.66 },
-  { name: "Israel", code: "IL", lat: 31.05, lng: 34.85, population: 9800000, region: "Middle East", tropical: false, hdi: 0.919, healthIndex: 0.90, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.92 },
-  { name: "Sierra Leone", code: "SL", lat: 8.46, lng: -11.78, population: 8600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.452, healthIndex: 0.20, waterSanitationIndex: 0.12, vaccineCoverage: 0.80, urbanization: 0.43 },
-  { name: "Liberia", code: "LR", lat: 6.43, lng: -9.43, population: 5400000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.481, healthIndex: 0.20, waterSanitationIndex: 0.12, vaccineCoverage: 0.72, urbanization: 0.52 },
-  { name: "Papua New Guinea", code: "PG", lat: -6.31, lng: 143.96, population: 10300000, region: "Oceania", tropical: true, hdi: 0.558, healthIndex: 0.26, waterSanitationIndex: 0.22, vaccineCoverage: 0.56, urbanization: 0.14 },
-  { name: "Laos", code: "LA", lat: 19.86, lng: 102.50, population: 7600000, region: "Southeast Asia", tropical: true, hdi: 0.620, healthIndex: 0.44, waterSanitationIndex: 0.50, vaccineCoverage: 0.81, urbanization: 0.38 },
-  { name: "Vietnam", code: "VN", lat: 14.06, lng: 108.28, population: 99500000, region: "Southeast Asia", tropical: true, hdi: 0.726, healthIndex: 0.62, waterSanitationIndex: 0.74, vaccineCoverage: 0.96, urbanization: 0.38 },
-  { name: "Poland", code: "PL", lat: 51.92, lng: 19.15, population: 37800000, region: "Europe", tropical: false, hdi: 0.876, healthIndex: 0.84, waterSanitationIndex: 0.98, vaccineCoverage: 0.94, urbanization: 0.60 },
-  { name: "Spain", code: "ES", lat: 40.46, lng: -3.75, population: 47500000, region: "Europe", tropical: false, hdi: 0.911, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.81 },
-  { name: "Turkey", code: "TR", lat: 38.96, lng: 35.24, population: 85300000, region: "Middle East", tropical: false, hdi: 0.838, healthIndex: 0.72, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.78 },
-  { name: "Iran", code: "IR", lat: 32.43, lng: 53.69, population: 88600000, region: "Middle East", tropical: false, hdi: 0.774, healthIndex: 0.64, waterSanitationIndex: 0.82, vaccineCoverage: 0.99, urbanization: 0.76 },
-  { name: "Ukraine", code: "UA", lat: 48.38, lng: 31.17, population: 36700000, region: "Europe", tropical: false, hdi: 0.734, healthIndex: 0.62, waterSanitationIndex: 0.86, vaccineCoverage: 0.80, urbanization: 0.70 },
-  { name: "Malaysia", code: "MY", lat: 4.21, lng: 101.98, population: 34300000, region: "Southeast Asia", tropical: true, hdi: 0.803, healthIndex: 0.74, waterSanitationIndex: 0.86, vaccineCoverage: 0.98, urbanization: 0.78 },
-  { name: "Ivory Coast", code: "CI", lat: 7.54, lng: -5.55, population: 28900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.550, healthIndex: 0.34, waterSanitationIndex: 0.26, vaccineCoverage: 0.84, urbanization: 0.52 },
-  { name: "Uzbekistan", code: "UZ", lat: 41.38, lng: 64.59, population: 35600000, region: "Central Asia", tropical: false, hdi: 0.727, healthIndex: 0.56, waterSanitationIndex: 0.66, vaccineCoverage: 0.98, urbanization: 0.50 },
-  { name: "Chile", code: "CL", lat: -35.68, lng: -71.54, population: 19600000, region: "Latin America", tropical: false, hdi: 0.860, healthIndex: 0.80, waterSanitationIndex: 0.94, vaccineCoverage: 0.94, urbanization: 0.88 },
-  { name: "Netherlands", code: "NL", lat: 52.13, lng: 5.29, population: 17700000, region: "Europe", tropical: false, hdi: 0.946, healthIndex: 0.95, waterSanitationIndex: 1.00, vaccineCoverage: 0.93, urbanization: 0.92 },
-  { name: "Romania", code: "RO", lat: 45.94, lng: 24.97, population: 19000000, region: "Europe", tropical: false, hdi: 0.821, healthIndex: 0.76, waterSanitationIndex: 0.92, vaccineCoverage: 0.88, urbanization: 0.55 },
-  { name: "Ecuador", code: "EC", lat: -1.83, lng: -78.18, population: 18200000, region: "Latin America", tropical: true, hdi: 0.740, healthIndex: 0.58, waterSanitationIndex: 0.70, vaccineCoverage: 0.88, urbanization: 0.64 },
-  { name: "Honduras", code: "HN", lat: 15.20, lng: -86.24, population: 10400000, region: "Latin America", tropical: true, hdi: 0.621, healthIndex: 0.46, waterSanitationIndex: 0.54, vaccineCoverage: 0.93, urbanization: 0.58 },
-  { name: "Cuba", code: "CU", lat: 21.52, lng: -77.78, population: 11200000, region: "Latin America", tropical: true, hdi: 0.764, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.78 },
-  { name: "New Zealand", code: "NZ", lat: -40.90, lng: 174.89, population: 5200000, region: "Oceania", tropical: false, hdi: 0.939, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.92, urbanization: 0.86 },
-  { name: "Norway", code: "NO", lat: 60.47, lng: 8.47, population: 5500000, region: "Europe", tropical: false, hdi: 0.966, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.84 },
-  { name: "Finland", code: "FI", lat: 61.92, lng: 25.75, population: 5600000, region: "Europe", tropical: false, hdi: 0.942, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.86 },
-  { name: "Denmark", code: "DK", lat: 56.26, lng: 9.50, population: 5900000, region: "Europe", tropical: false, hdi: 0.952, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.88 },
-  { name: "Singapore", code: "SG", lat: 1.35, lng: 103.82, population: 5900000, region: "Southeast Asia", tropical: true, hdi: 0.939, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 1.00 },
-  { name: "Togo", code: "TG", lat: 8.62, lng: 1.21, population: 9100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.539, healthIndex: 0.30, waterSanitationIndex: 0.20, vaccineCoverage: 0.86, urbanization: 0.43 },
-  { name: "Benin", code: "BJ", lat: 9.31, lng: 2.32, population: 13700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.525, healthIndex: 0.28, waterSanitationIndex: 0.18, vaccineCoverage: 0.86, urbanization: 0.48 },
-  { name: "Central African Rep.", code: "CF", lat: 6.61, lng: 20.94, population: 5600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.387, healthIndex: 0.14, waterSanitationIndex: 0.08, vaccineCoverage: 0.50, urbanization: 0.42 },
-  { name: "Congo", code: "CG", lat: -0.23, lng: 15.83, population: 6100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.571, healthIndex: 0.28, waterSanitationIndex: 0.22, vaccineCoverage: 0.78, urbanization: 0.68 },
-  { name: "South Sudan", code: "SS", lat: 6.88, lng: 31.31, population: 11400000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.381, healthIndex: 0.10, waterSanitationIndex: 0.06, vaccineCoverage: 0.42, urbanization: 0.20 },
-  { name: "Burundi", code: "BI", lat: -3.37, lng: 29.92, population: 13200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.426, healthIndex: 0.18, waterSanitationIndex: 0.12, vaccineCoverage: 0.90, urbanization: 0.14 },
-  { name: "Nicaragua", code: "NI", lat: 12.87, lng: -85.21, population: 7000000, region: "Latin America", tropical: true, hdi: 0.667, healthIndex: 0.50, waterSanitationIndex: 0.58, vaccineCoverage: 0.97, urbanization: 0.58 },
-  { name: "Dominican Rep.", code: "DO", lat: 18.74, lng: -70.16, population: 11300000, region: "Latin America", tropical: true, hdi: 0.767, healthIndex: 0.58, waterSanitationIndex: 0.74, vaccineCoverage: 0.84, urbanization: 0.84 },
-  { name: "Eritrea", code: "ER", lat: 15.18, lng: 39.78, population: 3700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.492, healthIndex: 0.22, waterSanitationIndex: 0.16, vaccineCoverage: 0.94, urbanization: 0.42 },
+  // conflictIndex: 0.0=none, 0.3=low-level, 0.6=significant, 0.9=major active conflict
+  { name: "Nigeria", code: "NG", lat: 9.08, lng: 7.49, population: 223800000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.548, healthIndex: 0.38, waterSanitationIndex: 0.32, vaccineCoverage: 0.57, urbanization: 0.54, conflictIndex: 0.45, malnutritionRate: 0.32, displacementIndex: 0.30 },
+  { name: "India", code: "IN", lat: 20.59, lng: 78.96, population: 1428600000, region: "South Asia", tropical: true, hdi: 0.644, healthIndex: 0.53, waterSanitationIndex: 0.58, vaccineCoverage: 0.91, urbanization: 0.36, conflictIndex: 0.10, malnutritionRate: 0.35, displacementIndex: 0.05 },
+  { name: "Brazil", code: "BR", lat: -14.24, lng: -51.93, population: 216400000, region: "Latin America", tropical: true, hdi: 0.760, healthIndex: 0.66, waterSanitationIndex: 0.74, vaccineCoverage: 0.79, urbanization: 0.88, conflictIndex: 0.10, malnutritionRate: 0.07, displacementIndex: 0.02 },
+  { name: "USA", code: "US", lat: 37.09, lng: -95.71, population: 339900000, region: "North America", tropical: false, hdi: 0.927, healthIndex: 0.88, waterSanitationIndex: 0.99, vaccineCoverage: 0.93, urbanization: 0.83, conflictIndex: 0.00, malnutritionRate: 0.02, displacementIndex: 0.00 },
+  { name: "China", code: "CN", lat: 35.86, lng: 104.20, population: 1425700000, region: "East Asia", tropical: false, hdi: 0.788, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.65, conflictIndex: 0.05, malnutritionRate: 0.03, displacementIndex: 0.02 },
+  { name: "Indonesia", code: "ID", lat: -0.79, lng: 113.92, population: 277500000, region: "Southeast Asia", tropical: true, hdi: 0.713, healthIndex: 0.56, waterSanitationIndex: 0.62, vaccineCoverage: 0.80, urbanization: 0.58, conflictIndex: 0.10, malnutritionRate: 0.17, displacementIndex: 0.04 },
+  { name: "Pakistan", code: "PK", lat: 30.38, lng: 69.35, population: 240500000, region: "South Asia", tropical: true, hdi: 0.540, healthIndex: 0.40, waterSanitationIndex: 0.42, vaccineCoverage: 0.85, urbanization: 0.37, conflictIndex: 0.45, malnutritionRate: 0.40, displacementIndex: 0.25 },
+  { name: "Bangladesh", code: "BD", lat: 23.68, lng: 90.36, population: 172200000, region: "South Asia", tropical: true, hdi: 0.670, healthIndex: 0.44, waterSanitationIndex: 0.48, vaccineCoverage: 0.97, urbanization: 0.40, conflictIndex: 0.10, malnutritionRate: 0.28, displacementIndex: 0.15 },
+  { name: "Russia", code: "RU", lat: 61.52, lng: 105.32, population: 144200000, region: "Europe", tropical: false, hdi: 0.821, healthIndex: 0.68, waterSanitationIndex: 0.90, vaccineCoverage: 0.97, urbanization: 0.75, conflictIndex: 0.20, malnutritionRate: 0.02, displacementIndex: 0.05 },
+  { name: "Mexico", code: "MX", lat: 23.63, lng: -102.55, population: 128900000, region: "Latin America", tropical: true, hdi: 0.770, healthIndex: 0.64, waterSanitationIndex: 0.76, vaccineCoverage: 0.88, urbanization: 0.81, conflictIndex: 0.15, malnutritionRate: 0.08, displacementIndex: 0.05 },
+  { name: "Japan", code: "JP", lat: 36.20, lng: 138.25, population: 123300000, region: "East Asia", tropical: false, hdi: 0.920, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.99, urbanization: 0.92, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Ethiopia", code: "ET", lat: 9.15, lng: 40.49, population: 126500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.492, healthIndex: 0.30, waterSanitationIndex: 0.20, vaccineCoverage: 0.72, urbanization: 0.22, conflictIndex: 0.75, malnutritionRate: 0.42, displacementIndex: 0.70 },
+  { name: "Philippines", code: "PH", lat: 12.88, lng: 121.77, population: 117300000, region: "Southeast Asia", tropical: true, hdi: 0.710, healthIndex: 0.54, waterSanitationIndex: 0.60, vaccineCoverage: 0.80, urbanization: 0.48, conflictIndex: 0.20, malnutritionRate: 0.20, displacementIndex: 0.10 },
+  { name: "Egypt", code: "EG", lat: 26.82, lng: 30.80, population: 112700000, region: "North Africa", tropical: false, hdi: 0.728, healthIndex: 0.56, waterSanitationIndex: 0.64, vaccineCoverage: 0.94, urbanization: 0.43, conflictIndex: 0.15, malnutritionRate: 0.07, displacementIndex: 0.10 },
+  { name: "DR Congo", code: "CD", lat: -4.04, lng: 21.76, population: 102300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.481, healthIndex: 0.22, waterSanitationIndex: 0.15, vaccineCoverage: 0.57, urbanization: 0.47, conflictIndex: 0.90, malnutritionRate: 0.52, displacementIndex: 0.85 },
+  { name: "Germany", code: "DE", lat: 51.17, lng: 10.45, population: 84400000, region: "Europe", tropical: false, hdi: 0.950, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.77, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "UK", code: "GB", lat: 55.38, lng: -3.44, population: 67700000, region: "Europe", tropical: false, hdi: 0.940, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.84, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "France", code: "FR", lat: 46.23, lng: 2.21, population: 68300000, region: "Europe", tropical: false, hdi: 0.910, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.82, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Thailand", code: "TH", lat: 15.87, lng: 100.99, population: 71800000, region: "Southeast Asia", tropical: true, hdi: 0.803, healthIndex: 0.70, waterSanitationIndex: 0.80, vaccineCoverage: 0.96, urbanization: 0.52, conflictIndex: 0.10, malnutritionRate: 0.10, displacementIndex: 0.05 },
+  { name: "Tanzania", code: "TZ", lat: -6.37, lng: 34.89, population: 65500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.532, healthIndex: 0.32, waterSanitationIndex: 0.25, vaccineCoverage: 0.94, urbanization: 0.38, conflictIndex: 0.10, malnutritionRate: 0.34, displacementIndex: 0.10 },
+  { name: "South Africa", code: "ZA", lat: -30.56, lng: 22.94, population: 60400000, region: "Sub-Saharan Africa", tropical: false, hdi: 0.717, healthIndex: 0.52, waterSanitationIndex: 0.70, vaccineCoverage: 0.76, urbanization: 0.68, conflictIndex: 0.05, malnutritionRate: 0.08, displacementIndex: 0.05 },
+  { name: "Kenya", code: "KE", lat: -0.02, lng: 37.91, population: 55100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.601, healthIndex: 0.40, waterSanitationIndex: 0.35, vaccineCoverage: 0.88, urbanization: 0.29, conflictIndex: 0.20, malnutritionRate: 0.26, displacementIndex: 0.20 },
+  { name: "Colombia", code: "CO", lat: 4.57, lng: -74.30, population: 52100000, region: "Latin America", tropical: true, hdi: 0.758, healthIndex: 0.62, waterSanitationIndex: 0.74, vaccineCoverage: 0.90, urbanization: 0.82, conflictIndex: 0.30, malnutritionRate: 0.09, displacementIndex: 0.20 },
+  { name: "Italy", code: "IT", lat: 41.87, lng: 12.57, population: 58900000, region: "Europe", tropical: false, hdi: 0.906, healthIndex: 0.90, waterSanitationIndex: 0.99, vaccineCoverage: 0.94, urbanization: 0.72, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Myanmar", code: "MM", lat: 21.91, lng: 95.96, population: 54400000, region: "Southeast Asia", tropical: true, hdi: 0.585, healthIndex: 0.36, waterSanitationIndex: 0.40, vaccineCoverage: 0.78, urbanization: 0.32, conflictIndex: 0.85, malnutritionRate: 0.30, displacementIndex: 0.75 },
+  { name: "South Korea", code: "KR", lat: 35.91, lng: 127.77, population: 51780000, region: "East Asia", tropical: false, hdi: 0.929, healthIndex: 0.93, waterSanitationIndex: 1.00, vaccineCoverage: 0.99, urbanization: 0.81, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Sudan", code: "SD", lat: 12.86, lng: 30.22, population: 48100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.510, healthIndex: 0.25, waterSanitationIndex: 0.18, vaccineCoverage: 0.55, urbanization: 0.36, conflictIndex: 0.90, malnutritionRate: 0.38, displacementIndex: 0.90 },
+  { name: "Uganda", code: "UG", lat: 1.37, lng: 32.29, population: 48600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.550, healthIndex: 0.32, waterSanitationIndex: 0.22, vaccineCoverage: 0.90, urbanization: 0.26, conflictIndex: 0.25, malnutritionRate: 0.29, displacementIndex: 0.30 },
+  { name: "Argentina", code: "AR", lat: -38.42, lng: -63.62, population: 46300000, region: "Latin America", tropical: false, hdi: 0.849, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.94, urbanization: 0.92, conflictIndex: 0.00, malnutritionRate: 0.04, displacementIndex: 0.00 },
+  { name: "Algeria", code: "DZ", lat: 28.03, lng: 1.66, population: 45600000, region: "North Africa", tropical: false, hdi: 0.745, healthIndex: 0.56, waterSanitationIndex: 0.62, vaccineCoverage: 0.95, urbanization: 0.74, conflictIndex: 0.10, malnutritionRate: 0.04, displacementIndex: 0.05 },
+  { name: "Iraq", code: "IQ", lat: 33.22, lng: 43.68, population: 44500000, region: "Middle East", tropical: false, hdi: 0.686, healthIndex: 0.42, waterSanitationIndex: 0.50, vaccineCoverage: 0.72, urbanization: 0.71, conflictIndex: 0.55, malnutritionRate: 0.12, displacementIndex: 0.40 },
+  { name: "Afghanistan", code: "AF", lat: 33.94, lng: 67.71, population: 41100000, region: "South Asia", tropical: false, hdi: 0.462, healthIndex: 0.20, waterSanitationIndex: 0.16, vaccineCoverage: 0.68, urbanization: 0.26, conflictIndex: 0.80, malnutritionRate: 0.54, displacementIndex: 0.80 },
+  { name: "Canada", code: "CA", lat: 56.13, lng: -106.35, population: 39600000, region: "North America", tropical: false, hdi: 0.935, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.93, urbanization: 0.82, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Morocco", code: "MA", lat: 31.79, lng: -7.09, population: 37800000, region: "North Africa", tropical: false, hdi: 0.698, healthIndex: 0.54, waterSanitationIndex: 0.60, vaccineCoverage: 0.98, urbanization: 0.64, conflictIndex: 0.05, malnutritionRate: 0.06, displacementIndex: 0.03 },
+  { name: "Saudi Arabia", code: "SA", lat: 23.89, lng: 45.08, population: 36900000, region: "Middle East", tropical: false, hdi: 0.875, healthIndex: 0.74, waterSanitationIndex: 0.94, vaccineCoverage: 0.98, urbanization: 0.84, conflictIndex: 0.15, malnutritionRate: 0.03, displacementIndex: 0.05 },
+  { name: "Peru", code: "PE", lat: -9.19, lng: -75.02, population: 34000000, region: "Latin America", tropical: true, hdi: 0.762, healthIndex: 0.60, waterSanitationIndex: 0.70, vaccineCoverage: 0.84, urbanization: 0.79, conflictIndex: 0.10, malnutritionRate: 0.13, displacementIndex: 0.05 },
+  { name: "Angola", code: "AO", lat: -11.20, lng: 17.87, population: 36000000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.586, healthIndex: 0.30, waterSanitationIndex: 0.22, vaccineCoverage: 0.57, urbanization: 0.68, conflictIndex: 0.15, malnutritionRate: 0.37, displacementIndex: 0.10 },
+  { name: "Mozambique", code: "MZ", lat: -18.67, lng: 35.53, population: 33900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.461, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.80, urbanization: 0.38, conflictIndex: 0.40, malnutritionRate: 0.43, displacementIndex: 0.30 },
+  { name: "Ghana", code: "GH", lat: 7.95, lng: -1.02, population: 33500000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.602, healthIndex: 0.42, waterSanitationIndex: 0.40, vaccineCoverage: 0.92, urbanization: 0.58, conflictIndex: 0.10, malnutritionRate: 0.18, displacementIndex: 0.08 },
+  { name: "Yemen", code: "YE", lat: 15.55, lng: 48.52, population: 34400000, region: "Middle East", tropical: false, hdi: 0.455, healthIndex: 0.18, waterSanitationIndex: 0.12, vaccineCoverage: 0.68, urbanization: 0.38, conflictIndex: 0.95, malnutritionRate: 0.54, displacementIndex: 0.90 },
+  { name: "Nepal", code: "NP", lat: 28.39, lng: 84.12, population: 30900000, region: "South Asia", tropical: false, hdi: 0.601, healthIndex: 0.42, waterSanitationIndex: 0.44, vaccineCoverage: 0.90, urbanization: 0.22, conflictIndex: 0.05, malnutritionRate: 0.36, displacementIndex: 0.05 },
+  { name: "Venezuela", code: "VE", lat: 6.42, lng: -66.59, population: 28400000, region: "Latin America", tropical: true, hdi: 0.691, healthIndex: 0.40, waterSanitationIndex: 0.50, vaccineCoverage: 0.68, urbanization: 0.88, conflictIndex: 0.20, malnutritionRate: 0.22, displacementIndex: 0.30 },
+  { name: "Madagascar", code: "MG", lat: -18.77, lng: 46.87, population: 30300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.501, healthIndex: 0.26, waterSanitationIndex: 0.18, vaccineCoverage: 0.64, urbanization: 0.40, conflictIndex: 0.10, malnutritionRate: 0.44, displacementIndex: 0.08 },
+  { name: "Australia", code: "AU", lat: -25.27, lng: 133.78, population: 26500000, region: "Oceania", tropical: false, hdi: 0.946, healthIndex: 0.95, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.86, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Cameroon", code: "CM", lat: 7.37, lng: 12.35, population: 28600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.576, healthIndex: 0.32, waterSanitationIndex: 0.26, vaccineCoverage: 0.83, urbanization: 0.58, conflictIndex: 0.50, malnutritionRate: 0.30, displacementIndex: 0.35 },
+  { name: "Niger", code: "NE", lat: 17.61, lng: 8.08, population: 27200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.394, healthIndex: 0.20, waterSanitationIndex: 0.14, vaccineCoverage: 0.75, urbanization: 0.17, conflictIndex: 0.55, malnutritionRate: 0.52, displacementIndex: 0.40 },
+  { name: "Sri Lanka", code: "LK", lat: 7.87, lng: 80.77, population: 22200000, region: "South Asia", tropical: true, hdi: 0.782, healthIndex: 0.64, waterSanitationIndex: 0.74, vaccineCoverage: 0.99, urbanization: 0.19, conflictIndex: 0.05, malnutritionRate: 0.15, displacementIndex: 0.05 },
+  { name: "Mali", code: "ML", lat: 17.57, lng: -4.00, population: 23300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.428, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.69, urbanization: 0.45, conflictIndex: 0.75, malnutritionRate: 0.38, displacementIndex: 0.55 },
+  { name: "Guatemala", code: "GT", lat: 15.78, lng: -90.23, population: 18100000, region: "Latin America", tropical: true, hdi: 0.627, healthIndex: 0.46, waterSanitationIndex: 0.52, vaccineCoverage: 0.85, urbanization: 0.52, conflictIndex: 0.15, malnutritionRate: 0.47, displacementIndex: 0.10 },
+  { name: "Senegal", code: "SN", lat: 14.50, lng: -14.45, population: 17900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.511, healthIndex: 0.36, waterSanitationIndex: 0.26, vaccineCoverage: 0.87, urbanization: 0.48, conflictIndex: 0.15, malnutritionRate: 0.17, displacementIndex: 0.10 },
+  { name: "Cambodia", code: "KH", lat: 12.57, lng: 104.99, population: 16950000, region: "Southeast Asia", tropical: true, hdi: 0.600, healthIndex: 0.42, waterSanitationIndex: 0.44, vaccineCoverage: 0.91, urbanization: 0.25, conflictIndex: 0.05, malnutritionRate: 0.22, displacementIndex: 0.05 },
+  { name: "Chad", code: "TD", lat: 15.45, lng: 18.73, population: 18300000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.394, healthIndex: 0.18, waterSanitationIndex: 0.10, vaccineCoverage: 0.48, urbanization: 0.24, conflictIndex: 0.70, malnutritionRate: 0.52, displacementIndex: 0.60 },
+  { name: "Somalia", code: "SO", lat: 5.15, lng: 46.20, population: 18100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.380, healthIndex: 0.14, waterSanitationIndex: 0.08, vaccineCoverage: 0.42, urbanization: 0.46, conflictIndex: 0.90, malnutritionRate: 0.50, displacementIndex: 0.85 },
+  { name: "Zambia", code: "ZM", lat: -13.13, lng: 27.85, population: 20600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.565, healthIndex: 0.32, waterSanitationIndex: 0.25, vaccineCoverage: 0.91, urbanization: 0.46, conflictIndex: 0.05, malnutritionRate: 0.34, displacementIndex: 0.08 },
+  { name: "Zimbabwe", code: "ZW", lat: -19.02, lng: 29.15, population: 16700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.593, healthIndex: 0.36, waterSanitationIndex: 0.28, vaccineCoverage: 0.84, urbanization: 0.32, conflictIndex: 0.10, malnutritionRate: 0.28, displacementIndex: 0.10 },
+  { name: "Rwanda", code: "RW", lat: -1.94, lng: 29.87, population: 14100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.548, healthIndex: 0.40, waterSanitationIndex: 0.36, vaccineCoverage: 0.98, urbanization: 0.18, conflictIndex: 0.10, malnutritionRate: 0.33, displacementIndex: 0.12 },
+  { name: "Guinea", code: "GN", lat: 9.95, lng: -9.70, population: 14200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.465, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.61, urbanization: 0.38, conflictIndex: 0.35, malnutritionRate: 0.30, displacementIndex: 0.20 },
+  { name: "Burkina Faso", code: "BF", lat: 12.24, lng: -1.56, population: 22700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.449, healthIndex: 0.24, waterSanitationIndex: 0.18, vaccineCoverage: 0.88, urbanization: 0.32, conflictIndex: 0.80, malnutritionRate: 0.35, displacementIndex: 0.65 },
+  { name: "Malawi", code: "MW", lat: -13.25, lng: 34.30, population: 20900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.508, healthIndex: 0.28, waterSanitationIndex: 0.20, vaccineCoverage: 0.93, urbanization: 0.18, conflictIndex: 0.05, malnutritionRate: 0.37, displacementIndex: 0.10 },
+  { name: "Bolivia", code: "BO", lat: -16.29, lng: -63.59, population: 12400000, region: "Latin America", tropical: true, hdi: 0.698, healthIndex: 0.50, waterSanitationIndex: 0.58, vaccineCoverage: 0.88, urbanization: 0.70, conflictIndex: 0.05, malnutritionRate: 0.16, displacementIndex: 0.03 },
+  { name: "Haiti", code: "HT", lat: 18.97, lng: -72.29, population: 11700000, region: "Latin America", tropical: true, hdi: 0.535, healthIndex: 0.24, waterSanitationIndex: 0.16, vaccineCoverage: 0.54, urbanization: 0.58, conflictIndex: 0.75, malnutritionRate: 0.46, displacementIndex: 0.55 },
+  { name: "Sweden", code: "SE", lat: 60.13, lng: 18.64, population: 10500000, region: "Europe", tropical: false, hdi: 0.952, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.88, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Portugal", code: "PT", lat: 39.40, lng: -8.22, population: 10300000, region: "Europe", tropical: false, hdi: 0.866, healthIndex: 0.88, waterSanitationIndex: 0.99, vaccineCoverage: 0.97, urbanization: 0.66, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Israel", code: "IL", lat: 31.05, lng: 34.85, population: 9800000, region: "Middle East", tropical: false, hdi: 0.919, healthIndex: 0.90, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.92, conflictIndex: 0.40, malnutritionRate: 0.02, displacementIndex: 0.10 },
+  { name: "Sierra Leone", code: "SL", lat: 8.46, lng: -11.78, population: 8600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.452, healthIndex: 0.20, waterSanitationIndex: 0.12, vaccineCoverage: 0.80, urbanization: 0.43, conflictIndex: 0.10, malnutritionRate: 0.32, displacementIndex: 0.12 },
+  { name: "Liberia", code: "LR", lat: 6.43, lng: -9.43, population: 5400000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.481, healthIndex: 0.20, waterSanitationIndex: 0.12, vaccineCoverage: 0.72, urbanization: 0.52, conflictIndex: 0.10, malnutritionRate: 0.32, displacementIndex: 0.08 },
+  { name: "Papua New Guinea", code: "PG", lat: -6.31, lng: 143.96, population: 10300000, region: "Oceania", tropical: true, hdi: 0.558, healthIndex: 0.26, waterSanitationIndex: 0.22, vaccineCoverage: 0.56, urbanization: 0.14, conflictIndex: 0.20, malnutritionRate: 0.28, displacementIndex: 0.10 },
+  { name: "Laos", code: "LA", lat: 19.86, lng: 102.50, population: 7600000, region: "Southeast Asia", tropical: true, hdi: 0.620, healthIndex: 0.44, waterSanitationIndex: 0.50, vaccineCoverage: 0.81, urbanization: 0.38, conflictIndex: 0.05, malnutritionRate: 0.33, displacementIndex: 0.05 },
+  { name: "Vietnam", code: "VN", lat: 14.06, lng: 108.28, population: 99500000, region: "Southeast Asia", tropical: true, hdi: 0.726, healthIndex: 0.62, waterSanitationIndex: 0.74, vaccineCoverage: 0.96, urbanization: 0.38, conflictIndex: 0.00, malnutritionRate: 0.20, displacementIndex: 0.02 },
+  { name: "Poland", code: "PL", lat: 51.92, lng: 19.15, population: 37800000, region: "Europe", tropical: false, hdi: 0.876, healthIndex: 0.84, waterSanitationIndex: 0.98, vaccineCoverage: 0.94, urbanization: 0.60, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.05 },
+  { name: "Spain", code: "ES", lat: 40.46, lng: -3.75, population: 47500000, region: "Europe", tropical: false, hdi: 0.911, healthIndex: 0.92, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.81, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Turkey", code: "TR", lat: 38.96, lng: 35.24, population: 85300000, region: "Middle East", tropical: false, hdi: 0.838, healthIndex: 0.72, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.78, conflictIndex: 0.25, malnutritionRate: 0.03, displacementIndex: 0.15 },
+  { name: "Iran", code: "IR", lat: 32.43, lng: 53.69, population: 88600000, region: "Middle East", tropical: false, hdi: 0.774, healthIndex: 0.64, waterSanitationIndex: 0.82, vaccineCoverage: 0.99, urbanization: 0.76, conflictIndex: 0.20, malnutritionRate: 0.04, displacementIndex: 0.10 },
+  { name: "Ukraine", code: "UA", lat: 48.38, lng: 31.17, population: 36700000, region: "Europe", tropical: false, hdi: 0.734, healthIndex: 0.62, waterSanitationIndex: 0.86, vaccineCoverage: 0.80, urbanization: 0.70, conflictIndex: 0.90, malnutritionRate: 0.03, displacementIndex: 0.85 },
+  { name: "Malaysia", code: "MY", lat: 4.21, lng: 101.98, population: 34300000, region: "Southeast Asia", tropical: true, hdi: 0.803, healthIndex: 0.74, waterSanitationIndex: 0.86, vaccineCoverage: 0.98, urbanization: 0.78, conflictIndex: 0.05, malnutritionRate: 0.08, displacementIndex: 0.03 },
+  { name: "Ivory Coast", code: "CI", lat: 7.54, lng: -5.55, population: 28900000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.550, healthIndex: 0.34, waterSanitationIndex: 0.26, vaccineCoverage: 0.84, urbanization: 0.52, conflictIndex: 0.20, malnutritionRate: 0.20, displacementIndex: 0.15 },
+  { name: "Uzbekistan", code: "UZ", lat: 41.38, lng: 64.59, population: 35600000, region: "Central Asia", tropical: false, hdi: 0.727, healthIndex: 0.56, waterSanitationIndex: 0.66, vaccineCoverage: 0.98, urbanization: 0.50, conflictIndex: 0.05, malnutritionRate: 0.09, displacementIndex: 0.03 },
+  { name: "Chile", code: "CL", lat: -35.68, lng: -71.54, population: 19600000, region: "Latin America", tropical: false, hdi: 0.860, healthIndex: 0.80, waterSanitationIndex: 0.94, vaccineCoverage: 0.94, urbanization: 0.88, conflictIndex: 0.00, malnutritionRate: 0.02, displacementIndex: 0.02 },
+  { name: "Netherlands", code: "NL", lat: 52.13, lng: 5.29, population: 17700000, region: "Europe", tropical: false, hdi: 0.946, healthIndex: 0.95, waterSanitationIndex: 1.00, vaccineCoverage: 0.93, urbanization: 0.92, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Romania", code: "RO", lat: 45.94, lng: 24.97, population: 19000000, region: "Europe", tropical: false, hdi: 0.821, healthIndex: 0.76, waterSanitationIndex: 0.92, vaccineCoverage: 0.88, urbanization: 0.55, conflictIndex: 0.00, malnutritionRate: 0.02, displacementIndex: 0.05 },
+  { name: "Ecuador", code: "EC", lat: -1.83, lng: -78.18, population: 18200000, region: "Latin America", tropical: true, hdi: 0.740, healthIndex: 0.58, waterSanitationIndex: 0.70, vaccineCoverage: 0.88, urbanization: 0.64, conflictIndex: 0.15, malnutritionRate: 0.23, displacementIndex: 0.08 },
+  { name: "Honduras", code: "HN", lat: 15.20, lng: -86.24, population: 10400000, region: "Latin America", tropical: true, hdi: 0.621, healthIndex: 0.46, waterSanitationIndex: 0.54, vaccineCoverage: 0.93, urbanization: 0.58, conflictIndex: 0.20, malnutritionRate: 0.23, displacementIndex: 0.12 },
+  { name: "Cuba", code: "CU", lat: 21.52, lng: -77.78, population: 11200000, region: "Latin America", tropical: true, hdi: 0.764, healthIndex: 0.74, waterSanitationIndex: 0.90, vaccineCoverage: 0.99, urbanization: 0.78, conflictIndex: 0.00, malnutritionRate: 0.03, displacementIndex: 0.02 },
+  { name: "New Zealand", code: "NZ", lat: -40.90, lng: 174.89, population: 5200000, region: "Oceania", tropical: false, hdi: 0.939, healthIndex: 0.94, waterSanitationIndex: 1.00, vaccineCoverage: 0.92, urbanization: 0.86, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Norway", code: "NO", lat: 60.47, lng: 8.47, population: 5500000, region: "Europe", tropical: false, hdi: 0.966, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.97, urbanization: 0.84, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Finland", code: "FI", lat: 61.92, lng: 25.75, population: 5600000, region: "Europe", tropical: false, hdi: 0.942, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 0.86, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Denmark", code: "DK", lat: 56.26, lng: 9.50, population: 5900000, region: "Europe", tropical: false, hdi: 0.952, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.95, urbanization: 0.88, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Singapore", code: "SG", lat: 1.35, lng: 103.82, population: 5900000, region: "Southeast Asia", tropical: true, hdi: 0.939, healthIndex: 0.96, waterSanitationIndex: 1.00, vaccineCoverage: 0.96, urbanization: 1.00, conflictIndex: 0.00, malnutritionRate: 0.01, displacementIndex: 0.00 },
+  { name: "Togo", code: "TG", lat: 8.62, lng: 1.21, population: 9100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.539, healthIndex: 0.30, waterSanitationIndex: 0.20, vaccineCoverage: 0.86, urbanization: 0.43, conflictIndex: 0.15, malnutritionRate: 0.26, displacementIndex: 0.10 },
+  { name: "Benin", code: "BJ", lat: 9.31, lng: 2.32, population: 13700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.525, healthIndex: 0.28, waterSanitationIndex: 0.18, vaccineCoverage: 0.86, urbanization: 0.48, conflictIndex: 0.20, malnutritionRate: 0.30, displacementIndex: 0.12 },
+  { name: "Central African Rep.", code: "CF", lat: 6.61, lng: 20.94, population: 5600000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.387, healthIndex: 0.14, waterSanitationIndex: 0.08, vaccineCoverage: 0.50, urbanization: 0.42, conflictIndex: 0.90, malnutritionRate: 0.50, displacementIndex: 0.85 },
+  { name: "Congo", code: "CG", lat: -0.23, lng: 15.83, population: 6100000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.571, healthIndex: 0.28, waterSanitationIndex: 0.22, vaccineCoverage: 0.78, urbanization: 0.68, conflictIndex: 0.30, malnutritionRate: 0.23, displacementIndex: 0.20 },
+  { name: "South Sudan", code: "SS", lat: 6.88, lng: 31.31, population: 11400000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.381, healthIndex: 0.10, waterSanitationIndex: 0.06, vaccineCoverage: 0.42, urbanization: 0.20, conflictIndex: 0.90, malnutritionRate: 0.56, displacementIndex: 0.90 },
+  { name: "Burundi", code: "BI", lat: -3.37, lng: 29.92, population: 13200000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.426, healthIndex: 0.18, waterSanitationIndex: 0.12, vaccineCoverage: 0.90, urbanization: 0.14, conflictIndex: 0.40, malnutritionRate: 0.56, displacementIndex: 0.35 },
+  { name: "Nicaragua", code: "NI", lat: 12.87, lng: -85.21, population: 7000000, region: "Latin America", tropical: true, hdi: 0.667, healthIndex: 0.50, waterSanitationIndex: 0.58, vaccineCoverage: 0.97, urbanization: 0.58, conflictIndex: 0.10, malnutritionRate: 0.17, displacementIndex: 0.08 },
+  { name: "Dominican Rep.", code: "DO", lat: 18.74, lng: -70.16, population: 11300000, region: "Latin America", tropical: true, hdi: 0.767, healthIndex: 0.58, waterSanitationIndex: 0.74, vaccineCoverage: 0.84, urbanization: 0.84, conflictIndex: 0.05, malnutritionRate: 0.07, displacementIndex: 0.05 },
+  { name: "Eritrea", code: "ER", lat: 15.18, lng: 39.78, population: 3700000, region: "Sub-Saharan Africa", tropical: true, hdi: 0.492, healthIndex: 0.22, waterSanitationIndex: 0.16, vaccineCoverage: 0.94, urbanization: 0.42, conflictIndex: 0.50, malnutritionRate: 0.38, displacementIndex: 0.40 },
 ];
 
 // ─── Core Engine ─────────────────────────────────────────────────────────────
@@ -609,14 +614,110 @@ function getLaggedIncidence(country, disease, year) {
   return Math.max(0.01, incidence);
 }
 
+// ─── Country-level disease burden overrides ───────────────────────────────────
+// Source: WHO country-specific reports; overrides regional priors for high-burden nations
+// Format: { "COUNTRYCODE-DiseaseName": incidenceOverride (0–1) }
+const COUNTRY_DISEASE_OVERRIDES = {
+  // Malaria — WHO WMR 2023 country estimates (cases per 1000 pop at risk → normalized)
+  "NG-Malaria": 0.88, // Nigeria: 66.5M cases = 26.8% global; ~290/1000 at-risk
+  "CD-Malaria": 0.92, // DRC: 30.7M = 12.3%; very high incidence
+  "UG-Malaria": 0.85, // Uganda: ~15M cases; very high endemic
+  "MZ-Malaria": 0.82, // Mozambique: ~11M; WMR high burden
+  "BF-Malaria": 0.84, // Burkina Faso: ~10.8M; very high
+  "ML-Malaria": 0.80, // Mali: ~7.3M
+  "NE-Malaria": 0.78, // Niger: ~7.7M
+  "TD-Malaria": 0.76, // Chad: ~5.4M
+  "SO-Malaria": 0.72, // Somalia: high/unstable context
+  "SD-Malaria": 0.62, // Sudan: conflict-elevated
+  "ET-Malaria": 0.60, // Ethiopia: 3.9M + conflict amplification
+  "IN-Malaria": 0.30, // India: ~1.9M cases; low relative to pop
+  "MM-Malaria": 0.45, // Myanmar: moderate; conflict-driven regression
+  "PG-Malaria": 0.60, // PNG: very high per capita
+
+  // Tuberculosis — WHO GTBR 2023 country estimates (incidence per 100k → normalized)
+  "IN-Tuberculosis": 0.88, // India: 199/100k; 2.82M cases = 27% global
+  "ID-Tuberculosis": 0.82, // Indonesia: 354/100k; 1.06M cases = 10%
+  "PH-Tuberculosis": 0.85, // Philippines: 638/100k; 800k = 7.5% — highest incidence rate
+  "PK-Tuberculosis": 0.76, // Pakistan: 181/100k; 600k = 5.7%
+  "CN-Tuberculosis": 0.58, // China: 55/100k; 780k = 7.1% (lower rate, high absolute)
+  "BD-Tuberculosis": 0.72, // Bangladesh: 221/100k; 381k
+  "NG-Tuberculosis": 0.68, // Nigeria: 219/100k; 467k = 4.5%
+  "CD-Tuberculosis": 0.70, // DRC: 320/100k; significant burden
+  "MM-Tuberculosis": 0.78, // Myanmar: 380/100k; military coup disrupted TB care
+  "ZA-Tuberculosis": 0.75, // S.Africa: 615/100k — HIV-TB co-infection highest globally
+  "ET-Tuberculosis": 0.65, // Ethiopia: 140/100k; 3rd highest African burden
+  "MZ-Tuberculosis": 0.70, // Mozambique: 551/100k; HIV-TB hotspot
+
+  // Cholera — WHO WER 2023-24 country-specific outbreaks
+  "YE-Cholera": 0.88,   // Yemen: 300k+ cases; conflict + WASH collapse
+  "CD-Cholera": 0.82,   // DRC: highest African burden 2023 (>35k cases)
+  "SO-Cholera": 0.78,   // Somalia: endemic + drought + conflict
+  "ET-Cholera": 0.75,   // Ethiopia: major 2023 outbreak (40k+ cases)
+  "SD-Cholera": 0.72,   // Sudan: collapse of WASH in 2023 conflict
+  "MZ-Cholera": 0.70,   // Mozambique: Cyclone aftermath 2023
+  "ZW-Cholera": 0.65,   // Zimbabwe: 2023-24 nationwide outbreak
+  "MW-Cholera": 0.68,   // Malawi: 2022-23 deadliest cholera in decades
+  "HT-Cholera": 0.70,   // Haiti: gang conflict + collapsed water system 2023
+  "AF-Cholera": 0.65,   // Afghanistan: endemic + flood-driven surges
+  "BD-Cholera": 0.55,   // Bangladesh: persistent Dhaka burden
+
+  // HIV/AIDS — UNAIDS 2023 country fact sheets (new infections per 1000 adults → normalized)
+  "ZA-HIV/AIDS": 0.88, // S.Africa: 150k new in 2022; 8.2M PLHIV; 4.2/1000 adult incidence
+  "NG-HIV/AIDS": 0.72, // Nigeria: 90k new; largest PLHIV in Africa (1.9M)
+  "MZ-HIV/AIDS": 0.80, // Mozambique: 87k new; 12.5% adult prevalence
+  "ZW-HIV/AIDS": 0.78, // Zimbabwe: 33k new; 12% adult prevalence
+  "ZM-HIV/AIDS": 0.76, // Zambia: 40k new; 10.8% adult prevalence
+  "UG-HIV/AIDS": 0.72, // Uganda: 53k new; 5.1% prevalence
+  "TZ-HIV/AIDS": 0.70, // Tanzania: 67k new; 4.9% prevalence
+  "MW-HIV/AIDS": 0.74, // Malawi: 17k new; 8.1% prevalence
+  "CD-HIV/AIDS": 0.62, // DRC: 26k new; concentrated urban
+  "KE-HIV/AIDS": 0.65, // Kenya: 40k new; 3.8% adult prevalence
+
+  // Dengue — WHO DON 2023-24; record-breaking year
+  "BR-Dengue": 0.90,   // Brazil: 6.9M cases 2024 — all-time global record
+  "CO-Dengue": 0.78,   // Colombia: 400k+ cases 2023
+  "VN-Dengue": 0.75,   // Vietnam: 120k+ cases 2023
+  "PH-Dengue": 0.80,   // Philippines: 223k cases 2023
+  "IN-Dengue": 0.72,   // India: severe underreporting; estimated millions
+  "ID-Dengue": 0.76,   // Indonesia: endemic; 120k+ reported 2023
+  "TH-Dengue": 0.70,   // Thailand: 100k+ 2023
+  "BD-Dengue": 0.68,   // Bangladesh: record 2023 outbreak (320k+ cases)
+  "AR-Dengue": 0.72,   // Argentina: 500k+ 2024; all-time record
+  "MX-Dengue": 0.65,   // Mexico: surging 2023-24
+
+  // Measles — WHO JRF 2023; outbreaks in vaccination-gap countries
+  "CD-Measles": 0.85,  // DRC: world's largest measles outbreak continuously
+  "ET-Measles": 0.72,  // Ethiopia: Tigray conflict zone major outbreak
+  "NG-Measles": 0.68,  // Nigeria: low DTP3 → recurrent outbreaks
+  "SO-Measles": 0.75,  // Somalia: <50% vaccination; endemic
+  "YE-Measles": 0.78,  // Yemen: 400k+ children unvaccinated
+  "AF-Measles": 0.70,  // Afghanistan: conflict-disrupted vaccination
+  "PK-Measles": 0.62,  // Pakistan: pockets of refusal; outbreaks ongoing
+  "SD-Measles": 0.65,  // Sudan: collapse of EPI 2023
+
+  // Yellow Fever — WHO AFRO endemic countries with surveillance data
+  "NG-Yellow Fever": 0.70, // Nigeria: largest endemic zone; outbreaks 2019-2023
+  "CD-Yellow Fever": 0.65, // DRC: endemic; mass vaccination gaps
+  "CM-Yellow Fever": 0.60, // Cameroon: endemic
+  "BR-Yellow Fever": 0.55, // Brazil: 2017-18 outbreak areas; ongoing sylvatic risk
+};
+
 // Main prediction function per (country, disease, year)
 function predict(country, disease, year) {
   const climate = getClimateScore(country.region, country.tropical, year);
-  const incidence = getLaggedIncidence(country, disease, year);
+
+  // Check for country-level override; blend with regional prior
+  const overrideKey = `${country.code}-${disease.name}`;
+  const override = COUNTRY_DISEASE_OVERRIDES[overrideKey];
+  const baseIncidence = getLaggedIncidence(country, disease, year);
+  // Blend: 70% override + 30% model if override exists (verified country data is more reliable)
+  const incidence = override !== undefined
+    ? override * 0.70 + baseIncidence * 0.30
+    : baseIncidence;
 
   // ── Feature engineering (WHO/IHME literature-calibrated weights) ──
 
-  // 1. Geographic incidence prior (strongest predictor; WHO regional burden data)
+  // 1. Geographic/country incidence prior (strongest predictor; WHO country burden data)
   const f_incidence = Math.min(1, Math.pow(incidence / 0.6, 0.72));
 
   // 2. Climate sensitivity (IPCC + WHO vector ecology data)
@@ -631,9 +732,13 @@ function predict(country, disease, year) {
   const washMult = disease.type === "waterborne" ? 1.8 : disease.type === "vector-borne" ? 0.7 : 0.4;
   const f_sanitation = Math.min(1, washDeficit * washMult * 0.8);
 
-  // 5. Vaccine coverage gap (WHO immunization data)
+  // 5. Vaccine coverage gap — disease-specific multipliers (measles vs flu vs typhoid differ hugely)
   const vaccGap = 1 - country.vaccineCoverage;
-  const vaccMult = disease.type === "respiratory" ? 1.6 : disease.type === "vector-borne" ? 0.6 : 0.5;
+  const vaccMult = disease.name === "Measles" ? 2.2
+    : disease.name === "Yellow Fever" ? 1.8
+    : disease.type === "respiratory" ? 1.4
+    : disease.type === "vector-borne" ? 0.5
+    : 0.5;
   const f_vaccination = Math.min(1, Math.pow(vaccGap * vaccMult, 0.8));
 
   // 6. Population density (World Bank; log-scaled contact rate)
@@ -643,28 +748,42 @@ function predict(country, disease, year) {
   // 7. HDI composite (UNDP HDR 2023)
   const f_hdi = Math.min(1, Math.pow(1 - country.hdi, 1.2) * 0.9);
 
-  // 8. Urbanization factor (WHO/World Bank)
-  const urbanFactor = disease.type === "respiratory" ? country.urbanization
-    : disease.type === "waterborne" ? (1 - country.urbanization)
-    : 0.5;
-  const f_urban = urbanFactor * 0.4;
+  // 8. Conflict & fragility (ACLED/UCDP 2023) — degrades health systems, displaces pop
+  // Critical for cholera, measles, TB in Yemen, DRC, Sudan, Myanmar
+  const conflictMult = disease.type === "waterborne" ? 1.4
+    : disease.name === "Measles" || disease.name === "Tuberculosis" ? 1.3
+    : disease.type === "vector-borne" ? 0.9
+    : 1.0;
+  const f_conflict = Math.min(1, country.conflictIndex * conflictMult);
 
-  // ── Ensemble weights (calibrated from WHO burden vs model outputs) ──
+  // 9. Malnutrition — UNICEF/WHO; amplifies severity + susceptibility for all diseases
+  const f_malnutrition = Math.min(1, country.malnutritionRate * 1.2);
+
+  // 10. Displacement (UNHCR) — camps drive cholera, measles, TB spikes
+  const displaceMult = disease.type === "waterborne" ? 1.6
+    : disease.name === "Measles" || disease.name === "Tuberculosis" ? 1.4
+    : 0.8;
+  const f_displacement = Math.min(1, country.displacementIndex * displaceMult);
+
+  // ── Ensemble weights (recalibrated; total = 1.00) ──
+  // Increased weight on country-specific incidence; added conflict/malnutrition/displacement
   const score =
-    f_incidence   * 0.30 +
-    f_climate     * 0.16 +
-    f_infra       * 0.18 +
-    f_sanitation  * 0.13 +
-    f_vaccination * 0.09 +
-    f_density     * 0.07 +
-    f_hdi         * 0.05 +
-    f_urban       * 0.02;
+    f_incidence    * 0.28 +  // WHO country/regional burden — strongest signal
+    f_infra        * 0.15 +  // Health system capacity
+    f_sanitation   * 0.12 +  // WASH — critical for waterborne
+    f_climate      * 0.12 +  // Temperature/vector suitability
+    f_conflict     * 0.10 +  // NEW: conflict amplification
+    f_malnutrition * 0.07 +  // NEW: nutritional vulnerability
+    f_vaccination  * 0.07 +  // Immunisation gaps
+    f_displacement * 0.05 +  // NEW: displacement/camp risk
+    f_density      * 0.02 +  // Population contact rate
+    f_hdi          * 0.02;   // Development composite
 
-  const stableRng = seededRandom(hash(`stable3-${country.code}-${disease.name}-${year}`));
-  const stableNoise = (stableRng() - 0.5) * 0.05;
+  const stableRng = seededRandom(hash(`stable4-${country.code}-${disease.name}-${year}`));
+  const stableNoise = (stableRng() - 0.5) * 0.04; // reduced noise — more deterministic
 
   const raw = Math.max(0.015, Math.min(0.92, score + stableNoise));
-  const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_urban };
+  const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_conflict, f_malnutrition, f_displacement };
   return { raw, features };
 }
 
@@ -692,14 +811,16 @@ function getYoYGrowth(country, disease, year) {
 function getFeatureImportance(country, disease, year) {
   const { features: f } = predict(country, disease, year);
   const items = [
-    { factor: "Geographic Incidence History", value: f.f_incidence, weight: 0.30 },
-    { factor: "Climate & Temperature",        value: f.f_climate,   weight: 0.16 },
-    { factor: "Healthcare Infrastructure",    value: f.f_infra,     weight: 0.18 },
-    { factor: "Water Sanitation Access",      value: f.f_sanitation,weight: 0.13 },
-    { factor: "Vaccine Coverage Gap",         value: f.f_vaccination,weight: 0.09 },
-    { factor: "Population Density",           value: f.f_density,   weight: 0.07 },
-    { factor: "Human Development Index",      value: f.f_hdi,       weight: 0.05 },
-    { factor: "Urbanization Factor",          value: f.f_urban,     weight: 0.02 },
+    { factor: "Country Incidence History",    value: f.f_incidence,    weight: 0.28 },
+    { factor: "Healthcare Infrastructure",    value: f.f_infra,        weight: 0.15 },
+    { factor: "Water & Sanitation Access",    value: f.f_sanitation,   weight: 0.12 },
+    { factor: "Climate & Temperature",        value: f.f_climate,      weight: 0.12 },
+    { factor: "Conflict & Fragility",         value: f.f_conflict,     weight: 0.10 },
+    { factor: "Malnutrition Rate",            value: f.f_malnutrition, weight: 0.07 },
+    { factor: "Vaccine Coverage Gap",         value: f.f_vaccination,  weight: 0.07 },
+    { factor: "Population Displacement",      value: f.f_displacement, weight: 0.05 },
+    { factor: "Population Density",           value: f.f_density,      weight: 0.02 },
+    { factor: "Human Development Index",      value: f.f_hdi,          weight: 0.02 },
   ];
   return items
     .map(item => ({
