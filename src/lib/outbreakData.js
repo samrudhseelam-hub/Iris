@@ -880,28 +880,98 @@ function predict(country, disease, year) {
   const f_displacement = Math.min(1, country.displacementIndex * displaceMult);
 
   // 11. Drug resistance (WHO AMR reports) — reduces treatment efficacy → prolongs transmission
-  // XDR-TB Pakistan/India/Philippines; drug-resistant cholera; AMR typhoid
+  // Fixed: consolidated per-country to avoid duplicate key overwrite bug
   const AMR_SCORES = {
-    // XDR/MDR-TB hotspots — WHO GTBR 2023 drug resistance surveillance
-    "PK": { Tuberculosis: 0.82 },  // XDR-TB epicentre; 4.3% MDR among new cases
-    "IN": { Tuberculosis: 0.55 },  // 2.8% MDR new cases; large absolute numbers
-    "PH": { Tuberculosis: 0.60 },  // 2.2% MDR; growing XDR concern
-    "MM": { Tuberculosis: 0.68 },  // 4.8% MDR; conflict disrupts DOT
-    "CD": { Tuberculosis: 0.65 },  // High MDR; poor lab capacity
-    "UA": { Tuberculosis: 0.70 },  // 29% MDR among new cases — Eastern Europe hotspot
-    "RU": { Tuberculosis: 0.60 },  // 27% MDR; prison system amplifier
-    "BY": { Tuberculosis: 0.65 },  // High MDR
-    // XDR-typhoid — Pakistan Indus delta outbreak
-    "PK": { ...({}), Typhoid: 0.75 }, // XDR-S.Typhi H58 clade — first ever large XDR outbreak
-    "IN": { Typhoid: 0.45 },       // AMR typhoid increasing
-    "BD": { Typhoid: 0.50 },       // Fluoroquinolone-resistant
-    // Drug-resistant cholera — GTFCC / WHO WER 2024
-    "HT": { Cholera: 0.72 },       // O1 El Tor variant; quinolone resistance documented
-    "BD": { ...({}), Cholera: 0.50 }, // AMR V.cholerae O1
+    "PK": { Tuberculosis: 0.82, Typhoid: 0.75 },  // XDR-TB + XDR-S.Typhi H58
+    "IN": { Tuberculosis: 0.55, Typhoid: 0.45 },  // MDR-TB + AMR typhoid
+    "PH": { Tuberculosis: 0.60 },                  // 2.2% MDR; growing XDR
+    "MM": { Tuberculosis: 0.68 },                  // 4.8% MDR; coup disrupts DOT
+    "CD": { Tuberculosis: 0.65 },                  // High MDR; poor lab capacity
+    "UA": { Tuberculosis: 0.70 },                  // 29% MDR — E.Europe hotspot
+    "RU": { Tuberculosis: 0.60 },                  // 27% MDR; prison amplifier
+    "BY": { Tuberculosis: 0.65 },                  // High MDR Belarus
+    "BD": { Typhoid: 0.50, Cholera: 0.50 },        // Fluoroquinolone-resistant typhoid + AMR cholera
+    "HT": { Cholera: 0.72 },                       // O1 El Tor; quinolone resistance
+    "NG": { Malaria: 0.40 },                        // Artemisinin partial resistance emerging W.Africa 2023
+    "GH": { Malaria: 0.38 },                        // Kelch13 mutations detected
+    "BF": { Malaria: 0.35 },                        // WHO: partial resistance signals Sahel
   };
   const amrData = AMR_SCORES[country.code] || {};
   const amrScore = amrData[disease.name] || 0;
   const f_amr = Math.min(1, amrScore * 0.8);
+
+  // 13. HIV co-infection amplifier on TB (HIV-TB syndemic — WHO GTBR)
+  // HIV+ individuals are 18x more likely to develop active TB
+  // High-HIV countries see dramatically worse TB outcomes
+  const HIV_TB_COUNTRIES = {
+    "ZA": 0.90, "MZ": 0.80, "ZW": 0.78, "ZM": 0.76, "MW": 0.74,
+    "UG": 0.72, "TZ": 0.70, "KE": 0.65, "NG": 0.62, "ET": 0.58,
+    "CD": 0.60, "SS": 0.65, "CF": 0.62, "CM": 0.65, "BI": 0.68,
+  };
+  const hivTbAmplifier = disease.name === "Tuberculosis"
+    ? (HIV_TB_COUNTRIES[country.code] || 0) * 0.12
+    : 0;
+
+  // 14. El Niño / climate anomaly index (ENSO) — inter-annual vector-borne risk spikes
+  // NOAA ONI records: 2023-24 strong El Niño → dengue/malaria surge in tropics
+  // La Niña (2020-21, 2021-22): increased rainfall → cholera/leptospirosis
+  const ENSO_YEARS = {
+    2020: { type: "LaNina", strength: 0.8 },
+    2021: { type: "LaNina", strength: 0.9 },
+    2022: { type: "LaNina", strength: 0.6 },
+    2023: { type: "ElNino", strength: 0.9 },
+    2024: { type: "ElNino", strength: 0.7 },
+    2025: { type: "Neutral", strength: 0.3 },
+    2026: { type: "LaNina", strength: 0.5 },  // probabilistic forecast
+    2027: { type: "Neutral", strength: 0.2 },
+    2028: { type: "ElNino", strength: 0.5 },  // probabilistic
+  };
+  const enso = ENSO_YEARS[year] || { type: "Neutral", strength: 0.2 };
+  let f_enso = 0;
+  if (enso.type === "ElNino" && country.tropical) {
+    // El Niño: drought in Africa/SE Asia → reduced mosquito habitat initially, then burst
+    // But in Americas/Pacific: warm+wet → dengue surge
+    const isAmericas = country.region === "Latin America" || country.region === "North America";
+    if ((disease.type === "vector-borne") && isAmericas) {
+      f_enso = enso.strength * 0.12;
+    } else if (disease.type === "waterborne" && !isAmericas) {
+      f_enso = enso.strength * 0.06; // drought reduces WASH quality
+    }
+  } else if (enso.type === "LaNina" && country.tropical) {
+    // La Niña: increased rainfall → flooding → cholera, leptospirosis, malaria spike
+    if (disease.type === "waterborne" || disease.name === "Leptospirosis") {
+      f_enso = enso.strength * 0.10;
+    } else if (disease.name === "Malaria" && country.region === "Sub-Saharan Africa") {
+      f_enso = enso.strength * 0.07;
+    }
+  }
+  f_enso = Math.min(0.15, f_enso);
+
+  // 15. Herd immunity depletion — COVID disrupted routine immunization 2020-2022
+  // WHO: 67M children missed vaccines during COVID; now susceptible cohort entering school age
+  // Measles most affected; also polio, yellow fever
+  const VACC_GAP_DISEASES = { "Measles": 1.0, "Yellow Fever": 0.6, "COVID-19": 0.3 };
+  const vaccGapFactor = VACC_GAP_DISEASES[disease.name] || 0;
+  // Peak depletion 2022-2024 (gap year kids now 3-6), fading by 2027
+  const depletionPeak = Math.max(0, 1 - Math.abs(year - 2023) * 0.25);
+  const f_vaccDepletion = Math.min(0.12, vaccGapFactor * depletionPeak * (1 - country.vaccineCoverage) * 0.20);
+
+  // 16. Conflict trajectory — escalating conflict is worse than stable conflict
+  // Countries with worsening conflict 2023+ get additional penalty
+  const CONFLICT_TRAJECTORY = {
+    "SD": 0.15,  // Sudan: new civil war April 2023 — rapidly escalating
+    "MM": 0.10,  // Myanmar: ongoing escalation post-coup
+    "HT": 0.12,  // Haiti: gang control expanding 2023-24
+    "BF": 0.10,  // Burkina Faso: coup + jihadist expansion
+    "ML": 0.08,  // Mali: coup + Wagner group + ECOWAS tensions
+    "SS": 0.10,  // South Sudan: intercommunal violence increasing
+    "UA": year >= 2022 ? 0.15 : 0,  // Ukraine: war started 2022
+    "YE": year >= 2021 && year <= 2025 ? 0.05 : 0, // Ceasefire periods
+    "ET": year >= 2020 && year <= 2023 ? 0.12 : 0, // Tigray war 2020-2023
+  };
+  const conflictEscalation = CONFLICT_TRAJECTORY[country.code] || 0;
+  // Escalation adds extra burden on top of static conflictIndex
+  const f_conflictEscalation = Math.min(0.10, conflictEscalation * 0.8);
 
   // 12. Economic shock (World Bank/IMF collapse index) — drives health system underfunding
   // Venezuela hyperinflation, Zimbabwe, Sudan, Haiti, Afghanistan economic freefall
@@ -927,26 +997,40 @@ function predict(country, disease, year) {
   // Economic shock amplifies all disease risk through reduced health spending
   const f_economic = Math.min(1, economicShock * 0.9);
 
-  // ── Ensemble weights (recalibrated v5; total = 1.00) ──
-  const score =
-    f_incidence    * 0.26 +  // WHO country/regional burden
-    f_infra        * 0.14 +  // Health system capacity
-    f_sanitation   * 0.11 +  // WASH
-    f_climate      * 0.11 +  // Temperature/vector
-    f_conflict     * 0.09 +  // Conflict amplification
+  // ── Ensemble weights (recalibrated v7; total = 1.00 core + additive bonuses) ──
+  // Core weighted score (sums to 1.0)
+  const coreScore =
+    f_incidence    * 0.26 +  // WHO country/regional burden (strongest single predictor)
+    f_infra        * 0.13 +  // Health system capacity
+    f_sanitation   * 0.10 +  // WASH access
+    f_climate      * 0.10 +  // Temperature/vector ecology
+    f_conflict     * 0.09 +  // Conflict (static)
     f_malnutrition * 0.07 +  // Nutritional vulnerability
     f_vaccination  * 0.07 +  // Immunisation gaps
     f_economic     * 0.06 +  // Economic shock/collapse
     f_displacement * 0.04 +  // Displacement/camp risk
     f_amr          * 0.03 +  // Drug resistance
-    f_density      * 0.02 +  // Population contact rate
-    f_hdi          * 0.01;   // Development composite (captured mostly by infra+sanitation already)
+    f_density      * 0.03 +  // Population contact rate
+    f_hdi          * 0.02;   // Development composite
 
-  const stableRng = seededRandom(hash(`stable5-${country.code}-${disease.name}-${year}`));
-  const stableNoise = (stableRng() - 0.5) * 0.03; // tighter noise — more deterministic
+  // Additive modifiers (bounded, applied on top of core)
+  const additiveBonus =
+    hivTbAmplifier +        // HIV-TB syndemic co-infection
+    f_enso +                // El Niño/La Niña inter-annual climate shock
+    f_vaccDepletion +       // Post-COVID herd immunity depletion
+    f_conflictEscalation;   // Conflict trajectory (escalating vs stable)
 
-  const raw = Math.max(0.015, Math.min(0.92, score + stableNoise));
-  const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_conflict, f_malnutrition, f_displacement, f_amr, f_economic };
+  const score = coreScore + Math.min(0.20, additiveBonus); // cap additive bonus at +20%
+
+  const stableRng = seededRandom(hash(`stable7-${country.code}-${disease.name}-${year}`));
+  const stableNoise = (stableRng() - 0.5) * 0.025; // even tighter noise in v7
+
+  const raw = Math.max(0.015, Math.min(0.93, score + stableNoise));
+  const features = {
+    f_incidence, f_climate, f_infra, f_sanitation, f_vaccination,
+    f_density, f_hdi, f_conflict, f_malnutrition, f_displacement,
+    f_amr, f_economic, hivTbAmplifier, f_enso, f_vaccDepletion, f_conflictEscalation,
+  };
   return { raw, features };
 }
 
@@ -997,18 +1081,23 @@ function getYoYGrowth(country, disease, year) {
 function getFeatureImportance(country, disease, year) {
   const { features: f } = predict(country, disease, year);
   const items = [
-    { factor: "Country Incidence History",    value: f.f_incidence,    weight: 0.26 },
-    { factor: "Healthcare Infrastructure",    value: f.f_infra,        weight: 0.14 },
-    { factor: "Water & Sanitation Access",    value: f.f_sanitation,   weight: 0.11 },
-    { factor: "Climate & Temperature",        value: f.f_climate,      weight: 0.11 },
-    { factor: "Conflict & Fragility",         value: f.f_conflict,     weight: 0.09 },
-    { factor: "Malnutrition Rate",            value: f.f_malnutrition, weight: 0.07 },
-    { factor: "Vaccine Coverage Gap",         value: f.f_vaccination,  weight: 0.07 },
-    { factor: "Economic Shock",               value: f.f_economic,     weight: 0.06 },
-    { factor: "Population Displacement",      value: f.f_displacement, weight: 0.04 },
-    { factor: "Drug Resistance (AMR)",        value: f.f_amr,          weight: 0.03 },
-    { factor: "Population Density",           value: f.f_density,      weight: 0.02 },
-    { factor: "Human Development Index",      value: f.f_hdi,          weight: 0.01 },
+    { factor: "Country Incidence History",    value: f.f_incidence,           weight: 0.26 },
+    { factor: "Healthcare Infrastructure",    value: f.f_infra,               weight: 0.13 },
+    { factor: "Water & Sanitation Access",    value: f.f_sanitation,          weight: 0.10 },
+    { factor: "Climate & Temperature",        value: f.f_climate,             weight: 0.10 },
+    { factor: "Conflict & Fragility",         value: f.f_conflict,            weight: 0.09 },
+    { factor: "Malnutrition Rate",            value: f.f_malnutrition,        weight: 0.07 },
+    { factor: "Vaccine Coverage Gap",         value: f.f_vaccination,         weight: 0.07 },
+    { factor: "Economic Shock",               value: f.f_economic,            weight: 0.06 },
+    { factor: "Population Displacement",      value: f.f_displacement,        weight: 0.04 },
+    { factor: "Drug Resistance (AMR)",        value: f.f_amr,                 weight: 0.03 },
+    { factor: "Population Density",           value: f.f_density,             weight: 0.03 },
+    { factor: "Human Development Index",      value: f.f_hdi,                 weight: 0.02 },
+    // Additive factors — shown only if non-zero contribution
+    ...(f.hivTbAmplifier > 0.005 ? [{ factor: "HIV-TB Co-infection", value: f.hivTbAmplifier / 0.12, weight: 0.12 }] : []),
+    ...(f.f_enso > 0.01 ? [{ factor: "El Niño/La Niña Climate", value: f.f_enso / 0.15, weight: 0.15 }] : []),
+    ...(f.f_vaccDepletion > 0.005 ? [{ factor: "Immunity Gap (COVID)", value: f.f_vaccDepletion / 0.12, weight: 0.12 }] : []),
+    ...(f.f_conflictEscalation > 0.005 ? [{ factor: "Conflict Escalation", value: f.f_conflictEscalation / 0.10, weight: 0.10 }] : []),
   ];
   return items
     .map(item => ({
@@ -1017,6 +1106,7 @@ function getFeatureImportance(country, disease, year) {
       direction: item.value > 0.45 ? "increase" : item.value < 0.18 ? "decrease" : "neutral",
       impact: item.value > 0.55 ? "high" : item.value > 0.30 ? "medium" : "low",
     }))
+    .filter(item => item.contribution > 0)
     .sort((a, b) => b.contribution - a.contribution);
 }
 
