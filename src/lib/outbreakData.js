@@ -700,6 +700,97 @@ const COUNTRY_DISEASE_OVERRIDES = {
   "CD-Yellow Fever": 0.65, // DRC: endemic; mass vaccination gaps
   "CM-Yellow Fever": 0.60, // Cameroon: endemic
   "BR-Yellow Fever": 0.55, // Brazil: 2017-18 outbreak areas; ongoing sylvatic risk
+  "AO-Yellow Fever": 0.58, // Angola: 2016 major outbreak; endemic risk
+  "GN-Yellow Fever": 0.55, // Guinea: endemic zone
+
+  // Tuberculosis — additional high-burden countries
+  "ZA-Tuberculosis": 0.80, // S.Africa: 615/100k — HIV-TB; world's worst HIV-TB co-epidemic
+  "KE-Tuberculosis": 0.58, // Kenya: 233/100k
+  "TZ-Tuberculosis": 0.62, // Tanzania: 246/100k
+  "UG-Tuberculosis": 0.60, // Uganda: 200/100k; HIV-TB
+  "ZM-Tuberculosis": 0.68, // Zambia: 380/100k; very high
+  "MW-Tuberculosis": 0.65, // Malawi: 181/100k
+  "SO-Tuberculosis": 0.72, // Somalia: conflict disrupts DOT; no reliable data
+  "SS-Tuberculosis": 0.75, // South Sudan: 156/100k official; likely much higher with conflict
+  "CF-Tuberculosis": 0.70, // CAR: 540/100k; extremely high
+  "SD-Tuberculosis": 0.65, // Sudan: 74/100k but conflict surging
+  "VN-Tuberculosis": 0.68, // Vietnam: 176/100k; 3rd SE Asia burden
+  "TH-Tuberculosis": 0.55, // Thailand: 131/100k
+  "RU-Tuberculosis": 0.58, // Russia: 47/100k + 27% MDR
+  "UA-Tuberculosis": 0.65, // Ukraine: 73/100k + 29% MDR; war disrupts DOT
+
+  // Malaria — more WHO WMR country data
+  "CM-Malaria": 0.72, // Cameroon: ~12M cases; high burden
+  "GH-Malaria": 0.68, // Ghana: ~5.4M cases
+  "CI-Malaria": 0.70, // Ivory Coast: ~4.7M
+  "TZ-Malaria": 0.74, // Tanzania: ~8.5M; 4th Africa
+  "KE-Malaria": 0.60, // Kenya: ~3.5M
+  "ZM-Malaria": 0.72, // Zambia: ~4.9M
+  "MW-Malaria": 0.75, // Malawi: ~5.3M
+  "AO-Malaria": 0.76, // Angola: ~6.3M
+  "CD-Malaria": 0.92, // DRC: confirmed highest
+  "SS-Malaria": 0.78, // South Sudan: very high per capita; conflict degrades nets
+  "CF-Malaria": 0.82, // CAR: extremely high incidence
+  "TD-Malaria": 0.76, // Chad
+  "ZW-Malaria": 0.62, // Zimbabwe
+  "GN-Malaria": 0.74, // Guinea: high burden
+  "SN-Malaria": 0.58, // Senegal: controlled program but endemic
+  "SL-Malaria": 0.76, // Sierra Leone: very high
+  "LR-Malaria": 0.72, // Liberia: high
+
+  // Dengue — more WHO country data
+  "PE-Dengue": 0.72,  // Peru: 2023 epidemic; 220k+ cases
+  "EC-Dengue": 0.65,  // Ecuador: surging 2023-24
+  "VE-Dengue": 0.70,  // Venezuela: collapse → endemic dengue resurgence
+  "HN-Dengue": 0.62,  // Honduras: endemic Caribbean coast
+  "GT-Dengue": 0.60,  // Guatemala: endemic
+  "DO-Dengue": 0.60,  // Dominican Republic: Caribbean endemic
+  "SG-Dengue": 0.65,  // Singapore: urban dengue highly tracked; 32k 2023
+  "MY-Dengue": 0.70,  // Malaysia: 111k cases 2023; surging
+  "PK-Dengue": 0.62,  // Pakistan: 2023 outbreak >100k cases Lahore
+
+  // Cholera — additional outbreaks
+  "SO-Cholera": 0.80, // Somalia: endemic + conflict + drought
+  "SS-Cholera": 0.72, // South Sudan: IDP camps; endemic
+  "CF-Cholera": 0.65, // CAR: recurrent Lake Chad basin outbreaks
+  "TD-Cholera": 0.68, // Chad: Lake Chad basin endemic
+  "CM-Cholera": 0.58, // Cameroon: Lake Chad + Anglophone conflict zones
+  "NG-Cholera": 0.60, // Nigeria: northern states; recurrent
+  "GH-Cholera": 0.45, // Ghana: sporadic outbreaks
+  "MG-Cholera": 0.55, // Madagascar: cyclone-season outbreaks
+  "SY": 0.75,         // Syria: conflict-driven
+
+  // HIV/AIDS — additional UNAIDS data
+  "BI-HIV/AIDS": 0.68, // Burundi: 4.8% adult prevalence
+  "RW-HIV/AIDS": 0.60, // Rwanda: 2.5% but comprehensive treatment
+  "SS-HIV/AIDS": 0.65, // South Sudan: 2.5% in conflict context
+  "CF-HIV/AIDS": 0.62, // CAR: 3.4% adult prevalence
+  "ET-HIV/AIDS": 0.58, // Ethiopia: 0.8% but large pop; 700k PLHIV
+  "CM-HIV/AIDS": 0.65, // Cameroon: 3.6% adult prevalence
+
+  // Measles — additional resurgence countries
+  "CD-Measles": 0.88, // DRC: ~300k+ cases/year; world's largest endemic
+  "MG-Measles": 0.72, // Madagascar: 2018-19 killed 1200+; recurrent
+  "GN-Measles": 0.65, // Guinea: low vaccination coverage
+  "TD-Measles": 0.68, // Chad: <50% measles vaccination
+  "SS-Measles": 0.75, // South Sudan: <38% coverage
+  "CF-Measles": 0.70, // CAR: conflict-disrupted immunisation
+  "MM-Measles": 0.65, // Myanmar: coup disrupted EPI; resurgence
+
+  // Leptospirosis — additional WHO/ILRI burden data
+  "PH-Leptospirosis": 0.75, // Philippines: highest reported burden globally; Manila floods
+  "BR-Leptospirosis": 0.65, // Brazil: Sao Paulo seasonal floods
+  "IN-Leptospirosis": 0.60, // India: Kerala, Mumbai flooding
+  "SR-Leptospirosis": 0.55, // Sri Lanka: endemic flood-prone areas
+  "TH-Leptospirosis": 0.55, // Thailand: rice farming + flooding
+  "ID-Leptospirosis": 0.58, // Indonesia: Java flooding
+
+  // Typhoid — XDR/AMR context
+  "PK-Typhoid": 0.82, // Pakistan: XDR S.Typhi H58; Sindh epicentre
+  "BD-Typhoid": 0.70, // Bangladesh: AMR typhoid; 2022 surge
+  "IN-Typhoid": 0.65, // India: large burden; AMR increasing
+  "PH-Typhoid": 0.60, // Philippines: endemic
+  "NG-Typhoid": 0.58, // Nigeria: underreported; WASH-linked
 };
 
 // Main prediction function per (country, disease, year)
@@ -765,25 +856,74 @@ function predict(country, disease, year) {
     : 0.8;
   const f_displacement = Math.min(1, country.displacementIndex * displaceMult);
 
-  // ── Ensemble weights (recalibrated; total = 1.00) ──
-  // Increased weight on country-specific incidence; added conflict/malnutrition/displacement
-  const score =
-    f_incidence    * 0.28 +  // WHO country/regional burden — strongest signal
-    f_infra        * 0.15 +  // Health system capacity
-    f_sanitation   * 0.12 +  // WASH — critical for waterborne
-    f_climate      * 0.12 +  // Temperature/vector suitability
-    f_conflict     * 0.10 +  // NEW: conflict amplification
-    f_malnutrition * 0.07 +  // NEW: nutritional vulnerability
-    f_vaccination  * 0.07 +  // Immunisation gaps
-    f_displacement * 0.05 +  // NEW: displacement/camp risk
-    f_density      * 0.02 +  // Population contact rate
-    f_hdi          * 0.02;   // Development composite
+  // 11. Drug resistance (WHO AMR reports) — reduces treatment efficacy → prolongs transmission
+  // XDR-TB Pakistan/India/Philippines; drug-resistant cholera; AMR typhoid
+  const AMR_SCORES = {
+    // XDR/MDR-TB hotspots — WHO GTBR 2023 drug resistance surveillance
+    "PK": { Tuberculosis: 0.82 },  // XDR-TB epicentre; 4.3% MDR among new cases
+    "IN": { Tuberculosis: 0.55 },  // 2.8% MDR new cases; large absolute numbers
+    "PH": { Tuberculosis: 0.60 },  // 2.2% MDR; growing XDR concern
+    "MM": { Tuberculosis: 0.68 },  // 4.8% MDR; conflict disrupts DOT
+    "CD": { Tuberculosis: 0.65 },  // High MDR; poor lab capacity
+    "UA": { Tuberculosis: 0.70 },  // 29% MDR among new cases — Eastern Europe hotspot
+    "RU": { Tuberculosis: 0.60 },  // 27% MDR; prison system amplifier
+    "BY": { Tuberculosis: 0.65 },  // High MDR
+    // XDR-typhoid — Pakistan Indus delta outbreak
+    "PK": { ...({}), Typhoid: 0.75 }, // XDR-S.Typhi H58 clade — first ever large XDR outbreak
+    "IN": { Typhoid: 0.45 },       // AMR typhoid increasing
+    "BD": { Typhoid: 0.50 },       // Fluoroquinolone-resistant
+    // Drug-resistant cholera — GTFCC / WHO WER 2024
+    "HT": { Cholera: 0.72 },       // O1 El Tor variant; quinolone resistance documented
+    "BD": { ...({}), Cholera: 0.50 }, // AMR V.cholerae O1
+  };
+  const amrData = AMR_SCORES[country.code] || {};
+  const amrScore = amrData[disease.name] || 0;
+  const f_amr = Math.min(1, amrScore * 0.8);
 
-  const stableRng = seededRandom(hash(`stable4-${country.code}-${disease.name}-${year}`));
-  const stableNoise = (stableRng() - 0.5) * 0.04; // reduced noise — more deterministic
+  // 12. Economic shock (World Bank/IMF collapse index) — drives health system underfunding
+  // Venezuela hyperinflation, Zimbabwe, Sudan, Haiti, Afghanistan economic freefall
+  const ECONOMIC_SHOCK = {
+    "VE": 0.85, // Venezuela: GDP −75% 2013-2021; health system collapse; malaria/measles resurgence
+    "ZW": 0.70, // Zimbabwe: chronic economic crisis; currency collapse cycles
+    "SD": 0.75, // Sudan: sanctions + conflict + economic implosion 2023
+    "HT": 0.80, // Haiti: GDP collapse + gang violence; cholera/measles perfect storm
+    "AF": 0.80, // Afghanistan: banking/economy freeze post-Taliban 2021; health system near-collapsed
+    "YE": 0.85, // Yemen: economy destroyed; oil revenues cut; no functional govt health budget
+    "SS": 0.75, // South Sudan: oil-dependent; perpetual currency/inflation crisis
+    "LK": 0.55, // Sri Lanka: 2022 economic crisis; medicine shortages
+    "BI": 0.60, // Burundi: isolated economy; chronic underfunding
+    "CF": 0.70, // CAR: budget almost entirely donor-dependent
+    "SO": 0.72, // Somalia: no functioning national budget for decades
+    "MM": 0.65, // Myanmar: coup caused ~30% GDP drop; health spending slashed
+    "SY": 0.85, // Syria: war + sanctions economic collapse
+    "NE": 0.50, // Niger: coup 2023 → sanctions → budget crisis
+    "ML": 0.50, // Mali: coup sanctions; ECOWAS pressure
+    "BF": 0.55, // Burkina Faso: coup; French departure; security spending vs health trade-off
+  };
+  const economicShock = ECONOMIC_SHOCK[country.code] || 0;
+  // Economic shock amplifies all disease risk through reduced health spending
+  const f_economic = Math.min(1, economicShock * 0.9);
+
+  // ── Ensemble weights (recalibrated v5; total = 1.00) ──
+  const score =
+    f_incidence    * 0.26 +  // WHO country/regional burden
+    f_infra        * 0.14 +  // Health system capacity
+    f_sanitation   * 0.11 +  // WASH
+    f_climate      * 0.11 +  // Temperature/vector
+    f_conflict     * 0.09 +  // Conflict amplification
+    f_malnutrition * 0.07 +  // Nutritional vulnerability
+    f_vaccination  * 0.07 +  // Immunisation gaps
+    f_economic     * 0.06 +  // Economic shock/collapse
+    f_displacement * 0.04 +  // Displacement/camp risk
+    f_amr          * 0.03 +  // Drug resistance
+    f_density      * 0.02 +  // Population contact rate
+    f_hdi          * 0.01;   // Development composite (captured mostly by infra+sanitation already)
+
+  const stableRng = seededRandom(hash(`stable5-${country.code}-${disease.name}-${year}`));
+  const stableNoise = (stableRng() - 0.5) * 0.03; // tighter noise — more deterministic
 
   const raw = Math.max(0.015, Math.min(0.92, score + stableNoise));
-  const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_conflict, f_malnutrition, f_displacement };
+  const features = { f_incidence, f_climate, f_infra, f_sanitation, f_vaccination, f_density, f_hdi, f_conflict, f_malnutrition, f_displacement, f_amr, f_economic };
   return { raw, features };
 }
 
@@ -811,16 +951,18 @@ function getYoYGrowth(country, disease, year) {
 function getFeatureImportance(country, disease, year) {
   const { features: f } = predict(country, disease, year);
   const items = [
-    { factor: "Country Incidence History",    value: f.f_incidence,    weight: 0.28 },
-    { factor: "Healthcare Infrastructure",    value: f.f_infra,        weight: 0.15 },
-    { factor: "Water & Sanitation Access",    value: f.f_sanitation,   weight: 0.12 },
-    { factor: "Climate & Temperature",        value: f.f_climate,      weight: 0.12 },
-    { factor: "Conflict & Fragility",         value: f.f_conflict,     weight: 0.10 },
+    { factor: "Country Incidence History",    value: f.f_incidence,    weight: 0.26 },
+    { factor: "Healthcare Infrastructure",    value: f.f_infra,        weight: 0.14 },
+    { factor: "Water & Sanitation Access",    value: f.f_sanitation,   weight: 0.11 },
+    { factor: "Climate & Temperature",        value: f.f_climate,      weight: 0.11 },
+    { factor: "Conflict & Fragility",         value: f.f_conflict,     weight: 0.09 },
     { factor: "Malnutrition Rate",            value: f.f_malnutrition, weight: 0.07 },
     { factor: "Vaccine Coverage Gap",         value: f.f_vaccination,  weight: 0.07 },
-    { factor: "Population Displacement",      value: f.f_displacement, weight: 0.05 },
+    { factor: "Economic Shock",               value: f.f_economic,     weight: 0.06 },
+    { factor: "Population Displacement",      value: f.f_displacement, weight: 0.04 },
+    { factor: "Drug Resistance (AMR)",        value: f.f_amr,          weight: 0.03 },
     { factor: "Population Density",           value: f.f_density,      weight: 0.02 },
-    { factor: "Human Development Index",      value: f.f_hdi,          weight: 0.02 },
+    { factor: "Human Development Index",      value: f.f_hdi,          weight: 0.01 },
   ];
   return items
     .map(item => ({
@@ -832,8 +974,58 @@ function getFeatureImportance(country, disease, year) {
     .sort((a, b) => b.contribution - a.contribution);
 }
 
+// WHO-anchored global case totals per disease (latest verified year)
+const GLOBAL_CASE_ANCHORS = {
+  "Malaria":      { total: 263_000_000, year: 2023 },  // WHO WMR 2024
+  "Tuberculosis": { total: 10_800_000,  year: 2023 },  // WHO GTBR 2024
+  "Dengue":       { total: 65_000_000,  year: 2024 },  // WHO DON (estimated)
+  "HIV/AIDS":     { total: 1_300_000,   year: 2023 },  // UNAIDS (new infections/yr)
+  "Cholera":      { total: 535_000,     year: 2023 },  // WHO WER (reported; ~10x actual)
+  "Measles":      { total: 9_000_000,   year: 2022 },  // WHO/IHME estimate
+  "Typhoid":      { total: 11_000_000,  year: 2022 },  // IHME GBD
+  "Hepatitis B":  { total: 4_500_000,   year: 2022 },  // WHO (new infections)
+  "Chikungunya":  { total: 456_000,     year: 2023 },  // WHO DON
+  "Leptospirosis":{ total: 1_020_000,   year: 2022 },  // IHME GBD
+  "Influenza":    { total: 900_000_000, year: 2023 },  // WHO GISRS estimate
+  "Yellow Fever": { total: 120_000,     year: 2023 },  // WHO (mid-range est)
+};
+
+// Fraction of global burden each country carries per disease (WHO country reports)
+const COUNTRY_BURDEN_SHARES = {
+  "NG-Malaria": 0.268, "CD-Malaria": 0.123, "UG-Malaria": 0.048, "MZ-Malaria": 0.044,
+  "BF-Malaria": 0.043, "ML-Malaria": 0.029, "NE-Malaria": 0.031, "TD-Malaria": 0.022,
+  "ET-Malaria": 0.016, "TZ-Malaria": 0.034, "CM-Malaria": 0.029, "GH-Malaria": 0.022,
+  "CI-Malaria": 0.019, "ZM-Malaria": 0.020, "MW-Malaria": 0.021, "AO-Malaria": 0.025,
+  "IN-Malaria": 0.007, "MM-Malaria": 0.004, "PG-Malaria": 0.003,
+  "IN-Tuberculosis": 0.270, "ID-Tuberculosis": 0.099, "PH-Tuberculosis": 0.074,
+  "PK-Tuberculosis": 0.057, "CN-Tuberculosis": 0.071, "BD-Tuberculosis": 0.035,
+  "NG-Tuberculosis": 0.044, "CD-Tuberculosis": 0.030, "MM-Tuberculosis": 0.028,
+  "ZA-Tuberculosis": 0.043, "ET-Tuberculosis": 0.026, "MZ-Tuberculosis": 0.022,
+  "BR-Dengue": 0.106, "CO-Dengue": 0.040, "VN-Dengue": 0.018, "PH-Dengue": 0.025,
+  "IN-Dengue": 0.080, "ID-Dengue": 0.022, "TH-Dengue": 0.015, "BD-Dengue": 0.035,
+  "AR-Dengue": 0.055, "MX-Dengue": 0.025, "MY-Dengue": 0.012, "PE-Dengue": 0.022,
+  "ZA-HIV/AIDS": 0.115, "NG-HIV/AIDS": 0.069, "MZ-HIV/AIDS": 0.067, "UG-HIV/AIDS": 0.041,
+  "ZM-HIV/AIDS": 0.031, "TZ-HIV/AIDS": 0.052, "ZW-HIV/AIDS": 0.025, "MW-HIV/AIDS": 0.013,
+  "KE-HIV/AIDS": 0.031, "ET-HIV/AIDS": 0.054, "CD-HIV/AIDS": 0.020,
+  "YE-Cholera": 0.140, "CD-Cholera": 0.065, "SO-Cholera": 0.058, "ET-Cholera": 0.075,
+  "SD-Cholera": 0.050, "MZ-Cholera": 0.035, "ZW-Cholera": 0.040, "MW-Cholera": 0.048,
+  "HT-Cholera": 0.040, "AF-Cholera": 0.035,
+};
+
 function estimateCases(country, disease, risk) {
-  // WHO burden calibration: incidence rate per 100k = risk × endemicBase × 120
+  // If we have a verified WHO burden share for this country+disease, anchor directly to global total
+  const shareKey = `${country.code}-${disease.name}`;
+  const anchor = GLOBAL_CASE_ANCHORS[disease.name];
+  const share = COUNTRY_BURDEN_SHARES[shareKey];
+
+  if (anchor && share) {
+    // Use WHO-anchored estimate adjusted by relative risk vs expected
+    const expectedRisk = disease.regionPriors[country.region] ?? 0.1;
+    const riskRatio = Math.max(0.3, Math.min(3.0, risk / (expectedRisk * 100 + 0.001) * 0.7 + 0.7));
+    return Math.round(anchor.total * share * riskRatio);
+  }
+
+  // Fallback: model-derived incidence rate anchored to endemicBase
   const incidencePer100k = risk * disease.endemicBase * 120;
   return Math.round((country.population / 100000) * incidencePer100k);
 }
