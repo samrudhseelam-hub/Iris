@@ -71,7 +71,7 @@ export default function RiskExplanation({ country, onClose }) {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="bg-muted/50 rounded-lg p-2.5 text-center">
           <p className="text-xl font-heading font-bold" style={{ color: getRiskColor(country.risk) }}>
             {country.risk}%
@@ -87,6 +87,39 @@ export default function RiskExplanation({ country, onClose }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Est. Cases</p>
         </div>
       </div>
+
+      {/* Confidence interval band */}
+      {country.riskLow !== undefined && country.riskHigh !== undefined && (
+        <div className="bg-muted/30 rounded-lg px-3 py-2 mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Projection Range</span>
+            <span className="text-[10px] text-muted-foreground">±{country.uncertainty}%</span>
+          </div>
+          <div className="relative h-2 bg-muted rounded-full overflow-hidden">
+            {/* Full bar background */}
+            <div className="absolute inset-0 bg-muted rounded-full" />
+            {/* CI band */}
+            <div
+              className="absolute h-full rounded-full opacity-30"
+              style={{
+                left: `${country.riskLow}%`,
+                width: `${Math.max(0, country.riskHigh - country.riskLow)}%`,
+                background: getRiskColor(country.risk),
+              }}
+            />
+            {/* Point estimate marker */}
+            <div
+              className="absolute top-0 h-full w-0.5 rounded-full"
+              style={{ left: `${country.risk}%`, background: getRiskColor(country.risk) }}
+            />
+          </div>
+          <div className="flex justify-between mt-0.5">
+            <span className="text-[9px] text-muted-foreground">{country.riskLow}%</span>
+            <span className="text-[9px] font-semibold" style={{ color: getRiskColor(country.risk) }}>{country.risk}%</span>
+            <span className="text-[9px] text-muted-foreground">{country.riskHigh}%</span>
+          </div>
+        </div>
+      )}
 
       {/* Trend Badge */}
       <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-4 ${trend.bg} ${trend.color}`}>

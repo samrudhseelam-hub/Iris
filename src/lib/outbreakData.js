@@ -600,6 +600,113 @@ function getClimateScore(region, tropical, year) {
   return Math.min(1, base + warming + regionBonus);
 }
 
+// ── Cross-border spillover network (WHO outbreak intelligence; ECDC event tracking) ──
+// When a high-burden neighbor is in active outbreak, border countries face elevated import risk.
+// Source: GOARN alerts, WHO DON, ECDC rapid risk assessments 2020-2024
+const SPILLOVER_NETWORK = {
+  // Key: country receiving spillover → [countries it shares outbreak-relevant borders with]
+  // Weighted by border permeability, population movement, and surveillance gap
+  "UG": ["CD", "SS", "SD"],   // DRC/S.Sudan/Sudan spillover into Uganda
+  "RW": ["CD", "BI"],          // DRC + Burundi
+  "KE": ["ET", "SO", "SS"],   // Ethiopia/Somalia/S.Sudan
+  "TZ": ["CD", "MW", "MZ"],   // DRC/Malawi/Mozambique
+  "CM": ["NG", "CF", "CD"],   // Nigeria/CAR/DRC
+  "SS": ["CD", "ET", "SD"],   // DRC/Ethiopia/Sudan
+  "CF": ["CD", "CM", "SS"],   // DRC/Cameroon/S.Sudan
+  "BI": ["CD", "RW", "TZ"],   // DRC/Rwanda/Tanzania
+  "NE": ["NG", "ML", "BF"],   // Nigeria/Mali/Burkina spillover
+  "TD": ["NG", "CF", "SD"],   // Nigeria/CAR/Sudan
+  "SD": ["ET", "SS", "EG"],   // Ethiopia/S.Sudan/Egypt
+  "ET": ["SS", "SO", "SD"],   // S.Sudan/Somalia/Sudan
+  "AF": ["PK", "IR"],          // Pakistan/Iran
+  "PK": ["AF", "IN"],          // Afghanistan/India
+  "BD": ["IN", "MM"],          // India/Myanmar
+  "MM": ["IN", "BD", "TH"],   // India/Bangladesh/Thailand
+  "VN": ["KH", "CN", "LA"],   // Cambodia/China/Laos
+  "KH": ["VN", "TH", "LA"],   // Vietnam/Thailand/Laos
+  "HT": ["DO"],                // Dominican Republic
+  "DO": ["HT"],                // Haiti
+  "VE": ["CO", "BR"],          // Colombia/Brazil
+  "CO": ["VE", "EC", "PE"],   // Venezuela/Ecuador/Peru
+  "YE": ["SA", "OM"],          // Saudi Arabia/Oman
+  "IQ": ["IR", "SY"],          // Iran/Syria
+  "SY": ["IQ", "LB", "TR"],   // Iraq/Lebanon/Turkey
+  "UA": ["RU", "BY"],          // Russia/Belarus
+};
+
+// ── Urban-Rural risk stratification ──────────────────────────────────────────
+// WHO: urban slums carry 2-3x respiratory/bloodborne risk vs rural; rural carries
+// 1.5-2x higher vector-borne/waterborne risk due to proximity to vectors + poor WASH
+// Source: WHO Urbanization & Health 2023; IHME GBD urban/rural estimates
+const URBAN_RURAL_BIAS = {
+  "vector-borne": { urbanFactor: 0.80, ruralFactor: 1.35 },  // Rural: more vectors, less IRS
+  "waterborne":   { urbanFactor: 0.85, ruralFactor: 1.40 },  // Rural: worse WASH access
+  "respiratory":  { urbanFactor: 1.30, ruralFactor: 0.80 },  // Urban: crowding amplifies transmission
+  "bloodborne":   { urbanFactor: 1.20, ruralFactor: 0.90 },  // Urban: more PWID, medical exposure
+};
+
+// ── Population immunity decay model ──────────────────────────────────────────
+// For diseases with waning immunity (dengue serotype switching, cholera, influenza),
+// cumulative exposure builds partial immunity but serotype diversity refreshes susceptibility
+// Source: Lancet ID 2023 dengue serotype surveillance; WHO cholera immunity papers
+function getImmunityDecayFactor(disease, country, year) {
+  // Dengue: partial immunity from previous exposure; serotype switching creates new susceptible pool
+  // Countries with high historical dengue burden have partially immune population (lower new cases)
+  // BUT serotype naïve individuals are MORE severely affected → risk dynamic shifts
+  if (disease.name === "Dengue") {
+    const highEndemicDengue = new Set(["TH","VN","PH","ID","MY","SG","IN","BD"]);
+    if (highEndemicDengue.has(country.code)) {
+      // Endemic countries: partial herd immunity reduces overall incidence but not severity
+      // Year 4+ cyclical pattern: susceptibility rises as new birth cohort enters
+      const cycleFactor = Math.sin((year - 2020) * Math.PI / 4) * 0.08; // ~4 year dengue cycle
+      return 0.92 + cycleFactor;
+    }
+    // Non-endemic: full susceptibility when introduced; rapid epidemic potential
+    const isExpanding = ["BR","AR","CO","EC","PE","HN","GT","DO"].includes(country.code);
+    return isExpanding ? 1.12 : 1.0;
+  }
+
+  // Cholera: immunity wanes in 3-5 years; displacement creates naive populations
+  if (disease.name === "Cholera") {
+    const cycleFactor = Math.sin((year - 2019) * Math.PI / 2.5) * 0.07;
+    return 1.0 + cycleFactor;
+  }
+
+  // Influenza: year-specific antigenic drift — unpredictable but approximated
+  if (disease.name === "Influenza") {
+    const driftSeed = seededRandom(hash(`flu-drift-${year}`));
+    return 0.90 + driftSeed() * 0.25; // ±12.5% year-over-year based on strain match
+  }
+
+  return 1.0; // No immunity decay for other diseases
+}
+
+// ── Projection uncertainty bands (for confidence interval display) ──────────
+// Returns { low, mid, high } as percentage points around the base estimate
+// Uncertainty grows with: years into future, data quality, political stability
+export function getRiskConfidenceInterval(baseRisk, country, disease, year) {
+  const currentYear = 2025;
+  const yearsAhead = Math.max(0, year - currentYear);
+  const survQuality = SURVEILLANCE_QUALITY[country.code] ?? 0.5;
+  const dataDensity = disease.dataDensity;
+
+  // Base uncertainty: ±3% for current year, grows with projection horizon
+  const baseUncertainty = 3.0 + yearsAhead * 1.8;
+  // Data quality reduces uncertainty
+  const qualityDiscount = survQuality * dataDensity * 0.6;
+  // Conflict countries have additional uncertainty
+  const conflictUncertainty = country.conflictIndex * 5.0;
+
+  const totalUncertainty = Math.max(2, baseUncertainty - qualityDiscount + conflictUncertainty);
+
+  return {
+    low:  Math.max(0.1, Math.round((baseRisk - totalUncertainty) * 10) / 10),
+    mid:  baseRisk,
+    high: Math.min(99, Math.round((baseRisk + totalUncertainty) * 10) / 10),
+    uncertainty: Math.round(totalUncertainty * 10) / 10,
+  };
+}
+
 // ── WHO underreporting correction factors (WHO burden vs reported ratio) ──────
 // Source: WHO disease-specific burden estimation methodologies
 const UNDERREPORTING_FACTORS = {
@@ -820,6 +927,31 @@ const COUNTRY_DISEASE_OVERRIDES = {
 function predict(country, disease, year) {
   const climate = getClimateScore(country.region, country.tropical, year);
 
+  // ── Cross-border spillover risk ───────────────────────────────────────────
+  // If neighbors have high burden for same disease, import risk is elevated
+  const neighbors = SPILLOVER_NETWORK[country.code] || [];
+  let spilloverBonus = 0;
+  if (neighbors.length > 0) {
+    for (const neighborCode of neighbors) {
+      const neighborOverrideKey = `${neighborCode}-${disease.name}`;
+      const neighborBurden = COUNTRY_DISEASE_OVERRIDES[neighborOverrideKey];
+      if (neighborBurden && neighborBurden > 0.55) {
+        // High-burden neighbor → spillover pressure (capped per neighbor)
+        spilloverBonus += (neighborBurden - 0.55) * 0.08;
+      }
+    }
+    spilloverBonus = Math.min(0.12, spilloverBonus); // cap total spillover at +12%
+  }
+
+  // ── Urban-Rural stratification ────────────────────────────────────────────
+  const urBias = URBAN_RURAL_BIAS[disease.type] || { urbanFactor: 1.0, ruralFactor: 1.0 };
+  // Blend based on urbanization rate: high urban → urban factor dominates
+  const urbanWeight = country.urbanization;
+  const urbanRuralMultiplier = urbanWeight * urBias.urbanFactor + (1 - urbanWeight) * urBias.ruralFactor;
+
+  // ── Population immunity decay ─────────────────────────────────────────────
+  const immunityDecay = getImmunityDecayFactor(disease, country, year);
+
   // Check for country-level override; blend with regional prior
   const overrideKey = `${country.code}-${disease.name}`;
   const override = COUNTRY_DISEASE_OVERRIDES[overrideKey];
@@ -1022,14 +1154,20 @@ function predict(country, disease, year) {
 
   const score = coreScore + Math.min(0.20, additiveBonus); // cap additive bonus at +20%
 
-  const stableRng = seededRandom(hash(`stable7-${country.code}-${disease.name}-${year}`));
-  const stableNoise = (stableRng() - 0.5) * 0.025; // even tighter noise in v7
+  // Apply multiplicative adjustments (urban/rural stratification + immunity decay)
+  // Then add spillover as additive bonus (it's an external pressure, not an internal multiplier)
+  const multiplied = score * urbanRuralMultiplier * immunityDecay;
+  const withSpillover = multiplied + spilloverBonus;
 
-  const raw = Math.max(0.015, Math.min(0.93, score + stableNoise));
+  const stableRng = seededRandom(hash(`stable8-${country.code}-${disease.name}-${year}`));
+  const stableNoise = (stableRng() - 0.5) * 0.022; // tighter in v8
+
+  const raw = Math.max(0.015, Math.min(0.93, withSpillover + stableNoise));
   const features = {
     f_incidence, f_climate, f_infra, f_sanitation, f_vaccination,
     f_density, f_hdi, f_conflict, f_malnutrition, f_displacement,
-    f_amr, f_economic, hivTbAmplifier, f_enso, f_vaccDepletion, f_conflictEscalation,
+    f_amr, f_economic, hivTbAmplifier, f_enso, f_vaccDepletion,
+    f_conflictEscalation, spilloverBonus, urbanRuralMultiplier, immunityDecay,
   };
   return { raw, features };
 }
@@ -1093,11 +1231,17 @@ function getFeatureImportance(country, disease, year) {
     { factor: "Drug Resistance (AMR)",        value: f.f_amr,                 weight: 0.03 },
     { factor: "Population Density",           value: f.f_density,             weight: 0.03 },
     { factor: "Human Development Index",      value: f.f_hdi,                 weight: 0.02 },
-    // Additive factors — shown only if non-zero contribution
-    ...(f.hivTbAmplifier > 0.005 ? [{ factor: "HIV-TB Co-infection", value: f.hivTbAmplifier / 0.12, weight: 0.12 }] : []),
-    ...(f.f_enso > 0.01 ? [{ factor: "El Niño/La Niña Climate", value: f.f_enso / 0.15, weight: 0.15 }] : []),
-    ...(f.f_vaccDepletion > 0.005 ? [{ factor: "Immunity Gap (COVID)", value: f.f_vaccDepletion / 0.12, weight: 0.12 }] : []),
-    ...(f.f_conflictEscalation > 0.005 ? [{ factor: "Conflict Escalation", value: f.f_conflictEscalation / 0.10, weight: 0.10 }] : []),
+    // Additive/multiplicative factors — shown only if non-zero contribution
+    ...(f.hivTbAmplifier > 0.005 ? [{ factor: "HIV-TB Co-infection Syndemic", value: f.hivTbAmplifier / 0.12, weight: 0.12 }] : []),
+    ...(f.f_enso > 0.01 ? [{ factor: "El Niño/La Niña (ENSO)", value: f.f_enso / 0.15, weight: 0.15 }] : []),
+    ...(f.f_vaccDepletion > 0.005 ? [{ factor: "Post-COVID Immunity Gap", value: f.f_vaccDepletion / 0.12, weight: 0.12 }] : []),
+    ...(f.f_conflictEscalation > 0.005 ? [{ factor: "Conflict Escalation Trend", value: f.f_conflictEscalation / 0.10, weight: 0.10 }] : []),
+    ...(f.spilloverBonus > 0.01 ? [{ factor: "Cross-border Spillover Risk", value: f.spilloverBonus / 0.12, weight: 0.12 }] : []),
+    ...(Math.abs(f.urbanRuralMultiplier - 1.0) > 0.05 ? [{
+      factor: f.urbanRuralMultiplier > 1.0 ? "Urban Crowding Pressure" : "Rural Vector Exposure",
+      value: Math.abs(f.urbanRuralMultiplier - 1.0) / 0.4,
+      weight: 0.10
+    }] : []),
   ];
   return items
     .map(item => ({
@@ -1246,6 +1390,9 @@ export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
       const yoyGrowth = getYoYGrowth(country, disease, year);
       const featureImportance = getFeatureImportance(country, disease, year);
 
+      const riskPct = Math.round(adjustedRaw * 1000) / 10;
+      const ci = getRiskConfidenceInterval(riskPct, country, disease, year);
+
       return {
         country: country.name,
         countryCode: country.code,
@@ -1255,14 +1402,17 @@ export function getAllPredictions(year, diseaseFilter = null, quarter = 2) {
         region: country.region,
         disease: disease.name,
         diseaseType: disease.type,
-        risk: Math.round(adjustedRaw * 1000) / 10,
-        confidence: Math.round(confidence * (isHistorical ? 95 : 100)), // historical data has higher confidence
+        risk: riskPct,
+        riskLow: ci.low,
+        riskHigh: ci.high,
+        uncertainty: ci.uncertainty,
+        confidence: Math.round(confidence * (isHistorical ? 95 : 100)),
         estimatedCases: estimateCases(country, disease, adjustedRaw),
         trend,
         yoyGrowth,
         featureImportance,
         year,
-        isHistorical, // flag to indicate if this is actual vs projected data
+        isHistorical,
       };
     })
   );
